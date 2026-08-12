@@ -15,7 +15,7 @@ export function AdminDashboard({ signedIn }: { signedIn: boolean }) {
   const [incident, setIncident] = useState<{ id: string; url: string } | null>(null);
   async function login(form: FormData) {
     try {
-      await api('/api/admin/login', { email: form.get('email'), password: form.get('password') });
+      await api('/api/admin/login', { login: form.get('login'), password: form.get('password') });
       location.reload();
     } catch (e) {
       setMessage(e instanceof Error ? e.message : 'Could not sign in');
@@ -59,8 +59,8 @@ export function AdminDashboard({ signedIn }: { signedIn: boolean }) {
         <h1>Sign in</h1>
         <form action={login}>
           <label>
-            Email
-            <input name="email" type="email" required />
+            Login
+            <input name="login" autoComplete="username" required />
           </label>
           <label>
             Password
