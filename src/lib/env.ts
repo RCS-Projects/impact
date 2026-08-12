@@ -7,6 +7,8 @@ const schema = z.object({
   APP_URL: z.string().url(),
   SESSION_SECRET: z.string().min(32),
   IP_HASH_SECRET: z.string().min(32),
+  ADMIN_BOOTSTRAP_EMAIL: z.string().email().optional(),
+  ADMIN_BOOTSTRAP_SECRET: z.string().min(32).optional(),
   NOMINATIM_SEARCH_URL: z.string().url(),
   TURNSTILE_SITE_KEY: z.string().optional(),
   TURNSTILE_SECRET_KEY: z.string().optional(),
