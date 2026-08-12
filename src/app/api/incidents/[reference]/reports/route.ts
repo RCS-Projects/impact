@@ -25,7 +25,8 @@ const inputSchema = z.object({
 
 async function verifyCaptcha(token: string | undefined) {
   const env = requireTurnstileConfiguration();
-  if (env.NODE_ENV === 'development' && env.DEVELOPMENT_TURNSTILE_BYPASS === 'true') return true;
+  if (env.IMPACT_RUNTIME_MODE === 'development' && env.DEVELOPMENT_TURNSTILE_BYPASS === 'true')
+    return true;
   if (!token || !env.TURNSTILE_SECRET_KEY) return false;
   const response = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
     method: 'POST',
