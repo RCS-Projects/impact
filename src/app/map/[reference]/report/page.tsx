@@ -13,6 +13,7 @@ export default async function ReportPage({ params }: { params: { reference: stri
       <ReportForm
         reference={params.reference}
         schema={incident.formSchema as { fields: never[] }}
+        center={[incident.initialLongitude, incident.initialLatitude]}
       />
     </main>
   );

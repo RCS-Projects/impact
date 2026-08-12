@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { LocationPicker } from './location-picker';
 type Field = {
   key: string;
   type: string;
@@ -10,12 +11,19 @@ type Field = {
 export function ReportForm({
   reference,
   schema,
+  center,
 }: {
   reference: string;
   schema: { fields: Field[] };
+  center: [number, number];
 }) {
   const [message, setMessage] = useState('');
   const [privacy, setPrivacy] = useState('approximate');
+  const [point, setPoint] = useState<{
+    latitude: number;
+    longitude: number;
+    placeLabel?: string;
+  } | null>(null);
   async function submit(form: FormData) {
     const answers: Record<string, unknown> = {};
     schema.fields.forEach((f) => {
@@ -32,10 +40,11 @@ export function ReportForm({
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        latitude: Number(form.get('latitude')),
-        longitude: Number(form.get('longitude')),
+        latitude: point?.latitude,
+        longitude: point?.longitude,
         privacy,
         answers,
+        placeLabel: point?.placeLabel,
       }),
     });
     const data = await response.json().catch(() => ({}));
@@ -47,18 +56,8 @@ export function ReportForm({
   }
   return (
     <form action={submit}>
-      <p>
-        Address search is optional; enter a coordinate from the map or use your device location in
-        the next update.
-      </p>
-      <label>
-        Latitude
-        <input name="latitude" type="number" step="any" min="41" max="84" required />
-      </label>
-      <label>
-        Longitude
-        <input name="longitude" type="number" step="any" min="-142" max="-52" required />
-      </label>
+      <LocationPicker center={center} onChange={setPoint} />
+      {!point && <p className="error">Choose a location before submitting.</p>}
       <fieldset>
         <legend>Public location</legend>
         <label>
@@ -103,7 +102,9 @@ export function ReportForm({
             )}
           </label>
         ))}
-      <button className="button">Submit report</button>
+      <button className="button" disabled={!point}>
+        Submit report
+      </button>
       <p>{message}</p>
     </form>
   );

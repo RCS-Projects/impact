@@ -82,3 +82,36 @@ button {
   border: 3px solid white;
   box-shadow: 0 1px 5px #0008;
 }
+.picker-map {
+  height: 340px;
+  width: 100%;
+  border-radius: 0.65rem;
+  overflow: hidden;
+}
+.location-picker {
+  display: grid;
+  gap: 0.7rem;
+}
+.secondary-button {
+  width: max-content;
+  padding: 0.6rem 0.8rem;
+  background: #e4eee9;
+  color: #12221c;
+  border-radius: 0.4rem;
+}
+.search-results {
+  background: white;
+  margin: 0;
+  padding: 0.25rem;
+  border: 1px solid #9aa8a1;
+  list-style: none;
+}
+.search-results button {
+  text-align: left;
+  width: 100%;
+  padding: 0.55rem;
+  background: transparent;
+}
+.error {
+  color: #9f2216;
+}
