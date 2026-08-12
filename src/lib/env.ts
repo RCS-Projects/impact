@@ -24,7 +24,10 @@ export function getEnv() {
 
 export function requireTurnstileConfiguration() {
   const env = getEnv();
-  if (env.IMPACT_RUNTIME_MODE === 'production' && (!env.TURNSTILE_SITE_KEY || !env.TURNSTILE_SECRET_KEY))
+  if (
+    env.IMPACT_RUNTIME_MODE === 'production' &&
+    (!env.TURNSTILE_SITE_KEY || !env.TURNSTILE_SECRET_KEY)
+  )
     throw new Error('Turnstile keys are required in production for public reports');
   return env;
 }
