@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import { findPublicIncident } from '@/lib/incidents';
+import { IncidentMap } from '@/components/incident-map';
 
 export const dynamic = 'force-dynamic';
 export default async function IncidentMapPage({ params }: { params: { reference: string } }) {
@@ -18,15 +19,20 @@ export default async function IncidentMapPage({ params }: { params: { reference:
             : 'Reports are crowdsourced and may not be independently verified.'}
         </strong>
       </p>
+      {Boolean(incident.reportingArea) && (
+        <p>Reports are accepted only within the outlined area.</p>
+      )}
+      <IncidentMap
+        reference={params.reference}
+        center={[incident.initialLongitude, incident.initialLatitude]}
+        zoom={incident.initialZoom}
+        reportingArea={incident.reportingArea}
+      />
       {!closed && (
         <a className="button" href={`/map/${params.reference}/report`}>
           Submit a report
         </a>
       )}
-      <p>
-        Interactive map and accessible report list are being added in the current implementation
-        milestone.
-      </p>
     </main>
   );
 }

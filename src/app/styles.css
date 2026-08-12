@@ -67,3 +67,18 @@ button {
   cursor: pointer;
   font: inherit;
 }
+.map {
+  height: min(58vh, 620px);
+  width: 100%;
+  margin: 2rem 0;
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+.impact-marker {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #b8402e;
+  border: 3px solid white;
+  box-shadow: 0 1px 5px #0008;
+}
