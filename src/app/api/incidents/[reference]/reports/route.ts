@@ -91,7 +91,7 @@ export async function POST(request: NextRequest, { params }: { params: { referen
     response.cookies.set('impact_browser_token', browserToken, {
       httpOnly: true,
       sameSite: 'lax',
-      secure: getEnv().NODE_ENV === 'production',
+      secure: getEnv().IMPACT_RUNTIME_MODE === 'production',
       maxAge: 60 * 60 * 24 * 365,
       path: '/',
     });

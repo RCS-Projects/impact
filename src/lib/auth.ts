@@ -37,7 +37,7 @@ export function sessionCookie(value: string) {
     options: {
       httpOnly: true,
       sameSite: 'lax' as const,
-      secure: getEnv().NODE_ENV === 'production',
+    secure: getEnv().IMPACT_RUNTIME_MODE === 'production',
       path: '/',
       maxAge: 60 * 60 * 12,
     },
