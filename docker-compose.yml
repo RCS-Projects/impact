@@ -17,7 +17,7 @@ services:
   app:
     build: .
     environment:
-      NODE_ENV: production
+      NODE_ENV: ${APP_NODE_ENV:-production}
       DATABASE_URL: postgresql://${POSTGRES_USER:-impact}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-impact}
       APP_URL: ${APP_URL:?Set APP_URL in .env}
       SESSION_SECRET: ${SESSION_SECRET:?Set SESSION_SECRET in .env}
