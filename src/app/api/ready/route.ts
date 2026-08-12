@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
-import { sql } from '@/lib/db';
+import { getSql } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
-    await sql`SELECT 1`;
+    await getSql()`SELECT 1`;
     return NextResponse.json({ status: 'ready' }, { headers: { 'Cache-Control': 'no-store' } });
   } catch {
     return NextResponse.json(

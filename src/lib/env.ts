@@ -13,8 +13,11 @@ const schema = z.object({
   DEVELOPMENT_TURNSTILE_BYPASS: z.enum(['true', 'false']).default('false'),
 });
 
-export const env = schema.parse(process.env);
-if (production && (!env.TURNSTILE_SITE_KEY || !env.TURNSTILE_SECRET_KEY))
-  throw new Error('Turnstile keys are required in production');
-if (production && env.DEVELOPMENT_TURNSTILE_BYPASS === 'true')
-  throw new Error('Development Turnstile bypass is forbidden in production');
+export function getEnv() {
+  const env = schema.parse(process.env);
+  if (production && (!env.TURNSTILE_SITE_KEY || !env.TURNSTILE_SECRET_KEY))
+    throw new Error('Turnstile keys are required in production');
+  if (production && env.DEVELOPMENT_TURNSTILE_BYPASS === 'true')
+    throw new Error('Development Turnstile bypass is forbidden in production');
+  return env;
+}

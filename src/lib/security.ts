@@ -1,10 +1,10 @@
 import crypto from 'node:crypto';
 import bcrypt from 'bcryptjs';
-import { env } from './env';
+import { getEnv } from './env';
 
 export const PRIVACY_RADIUS_METERS = 152.4;
 export function hmacIp(ip: string) {
-  return crypto.createHmac('sha256', env.IP_HASH_SECRET).update(ip).digest('hex');
+  return crypto.createHmac('sha256', getEnv().IP_HASH_SECRET).update(ip).digest('hex');
 }
 export function hashBrowserToken(token: string) {
   return crypto.createHash('sha256').update(token).digest('hex');
