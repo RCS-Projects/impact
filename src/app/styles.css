@@ -1,0 +1,42 @@
+:root {
+  color-scheme: light;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  background: #f6f8f7;
+  color: #12221c;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+.shell {
+  max-width: 760px;
+  margin: 12vh auto;
+  padding: 2rem;
+}
+.eyebrow {
+  color: #176c50;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  font-size: 0.8rem;
+}
+h1 {
+  font-size: clamp(2.3rem, 6vw, 4.5rem);
+  line-height: 1.02;
+  margin: 0.4rem 0 1.5rem;
+}
+p {
+  font-size: 1.1rem;
+  line-height: 1.6;
+}
+.button {
+  display: inline-block;
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  background: #176c50;
+  color: white;
+  text-decoration: none;
+  font-weight: 700;
+}
