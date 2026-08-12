@@ -109,3 +109,43 @@ export async function POST(request: NextRequest, { params }: { params: { referen
     return NextResponse.json({ error: 'Could not save report' }, { status: 500 });
   }
 }
+
+export async function GET(request: NextRequest, { params }: { params: { reference: string } }) {
+  const incident = await findPublicIncident(params.reference);
+  if (!incident) return NextResponse.json({ error: 'Incident not found' }, { status: 404 });
+  const bounds = z
+    .object({
+      west: z.coerce.number().min(-142).max(-52),
+      south: z.coerce.number().min(41).max(84),
+      east: z.coerce.number().min(-142).max(-52),
+      north: z.coerce.number().min(41).max(84),
+    })
+    .safeParse(Object.fromEntries(request.nextUrl.searchParams));
+  if (
+    !bounds.success ||
+    bounds.data.west > bounds.data.east ||
+    bounds.data.south > bounds.data.north
+  )
+    return NextResponse.json({ error: 'Valid map bounds are required' }, { status: 400 });
+  const b = bounds.data;
+  const reports = await getSql()<
+    {
+      id: string;
+      answers: unknown;
+      placeLabel: string | null;
+      privacy: string;
+      longitude: number;
+      latitude: number;
+      radius: number | null;
+      status: string;
+      createdAt: string;
+    }[]
+  >`
+    SELECT id, answers, public_place_label AS "placeLabel", location_privacy AS privacy, ST_X(public_coordinate::geometry) AS longitude, ST_Y(public_coordinate::geometry) AS latitude, privacy_radius_meters::float AS radius, moderation_status AS status, created_at::text AS "createdAt"
+    FROM reports WHERE incident_id = ${incident.id} AND moderation_status IN ('unverified', 'approved', 'resolved') AND public_coordinate && ST_MakeEnvelope(${b.west}, ${b.south}, ${b.east}, ${b.north}, 4326)::geography ORDER BY created_at DESC LIMIT 500
+  `;
+  return NextResponse.json(
+    { reports },
+    { headers: { 'Cache-Control': 'public, max-age=20, stale-while-revalidate=40' } },
+  );
+}
