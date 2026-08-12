@@ -6,8 +6,10 @@ async function api(path: string, body: unknown) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
-  const d = await r.json();
-  if (!r.ok) throw new Error(d.error ?? 'Request failed');
+  const text = await r.text();
+  const d = text ? (JSON.parse(text) as Record<string, unknown>) : {};
+  const error = typeof d.error === 'string' ? d.error : undefined;
+  if (!r.ok) throw new Error(error ?? 'Request failed');
   return d;
 }
 export function AdminDashboard({ signedIn }: { signedIn: boolean }) {
@@ -36,7 +38,7 @@ export function AdminDashboard({ signedIn }: { signedIn: boolean }) {
           ? JSON.parse(String(form.get('reportingArea')))
           : undefined,
       });
-      setIncident(data);
+      setIncident(data as { id: string; url: string });
       setMessage('Draft created.');
     } catch (e) {
       setMessage(e instanceof Error ? e.message : 'Could not create incident');
@@ -46,7 +48,7 @@ export function AdminDashboard({ signedIn }: { signedIn: boolean }) {
     if (!incident) return;
     try {
       const data = await api(`/api/admin/incidents/${incident.id}/publish`, {});
-      setIncident({ ...incident, url: data.url });
+      setIncident({ ...incident, url: data.url as string });
       setMessage('Published.');
     } catch (e) {
       setMessage(e instanceof Error ? e.message : 'Could not publish incident');

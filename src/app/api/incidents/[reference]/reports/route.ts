@@ -12,7 +12,7 @@ import {
   PRIVACY_RADIUS_METERS,
 } from '@/lib/security';
 import { getSql } from '@/lib/db';
-import { getEnv } from '@/lib/env';
+import { getEnv, requireTurnstileConfiguration } from '@/lib/env';
 
 const inputSchema = z.object({
   latitude: z.number().min(41).max(84),
@@ -24,7 +24,7 @@ const inputSchema = z.object({
 });
 
 async function verifyCaptcha(token: string | undefined) {
-  const env = getEnv();
+  const env = requireTurnstileConfiguration();
   if (env.NODE_ENV === 'development' && env.DEVELOPMENT_TURNSTILE_BYPASS === 'true') return true;
   if (!token || !env.TURNSTILE_SECRET_KEY) return false;
   const response = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
