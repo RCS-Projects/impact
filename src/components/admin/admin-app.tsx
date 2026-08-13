@@ -1,6 +1,7 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
 import { getCsrfToken } from '@/lib/csrf';
+import { PolygonEditor } from '@/components/admin/polygon-editor';
 
 interface AdminIncident {
   id: string;
@@ -25,6 +26,7 @@ async function adminApi(path: string, body: unknown) {
 export function AdminApp({ signedIn }: { signedIn: boolean }) {
   const [message, setMessage] = useState('');
   const [incidents, setIncidents] = useState<AdminIncident[]>([]);
+  const [reportingArea, setReportingArea] = useState<unknown | null>(null);
 
   const refresh = useCallback(async () => {
     const response = await fetch('/api/admin/incidents');
@@ -62,16 +64,6 @@ export function AdminApp({ signedIn }: { signedIn: boolean }) {
 
   async function create(form: FormData) {
     setMessage('');
-    let reportingArea: unknown;
-    const rawArea = String(form.get('reportingArea') ?? '').trim();
-    if (rawArea) {
-      try {
-        reportingArea = JSON.parse(rawArea);
-      } catch {
-        setMessage('Reporting area must be valid GeoJSON');
-        return;
-      }
-    }
     const response = await adminApi('/api/admin/incidents', {
       title: form.get('title'),
       description: String(form.get('description') ?? '') || undefined,
@@ -93,6 +85,7 @@ export function AdminApp({ signedIn }: { signedIn: boolean }) {
       return;
     }
     setMessage(`Draft created: ${data.url}`);
+    setReportingArea(null);
     void refresh();
   }
 
@@ -180,11 +173,38 @@ export function AdminApp({ signedIn }: { signedIn: boolean }) {
             </label>
           </div>
           <label className="field">
-            Reporting area GeoJSON (optional)
+            Reporting area
             <span className="hint">
-              Paste a Polygon or MultiPolygon. A visual drawing editor is planned.
+              Draw the reporting boundary on the map, or paste GeoJSON below.
             </span>
-            <textarea name="reportingArea" placeholder='{"type":"Polygon","coordinates":[...]}' />
+            <PolygonEditor
+              center={[-75.6972, 45.4215]}
+              value={
+                reportingArea &&
+                typeof reportingArea === 'object' &&
+                (reportingArea as { type?: string }).type === 'Polygon'
+                  ? ((reportingArea as { coordinates: [number, number][] }).coordinates[0] as unknown as [number, number][])
+                  : null
+              }
+              onChange={(coords) => {
+                if (!coords || coords.length < 3) {
+                  setReportingArea(null);
+                } else {
+                  setReportingArea({ type: 'Polygon', coordinates: [coords] });
+                }
+              }}
+            />
+            <textarea
+              value={reportingArea ? JSON.stringify(reportingArea) : ''}
+              onChange={(e) => {
+                const raw = e.target.value.trim();
+                if (!raw) { setReportingArea(null); return; }
+                try { setReportingArea(JSON.parse(raw)); } catch { /* ignore */ }
+              }}
+              rows={4}
+              placeholder='{"type":"Polygon","coordinates":[[...]]}'
+              style={{ marginTop: '0.3rem' }}
+            />
           </label>
           <button className="button">Create draft</button>
         </form>
@@ -227,6 +247,12 @@ export function AdminApp({ signedIn }: { signedIn: boolean }) {
                     </td>
                     <td>
                       <div className="buttons" style={{ marginTop: 0 }}>
+                        <a
+                          className="button button-secondary button-sm"
+                          href={`/admin/incidents/${incident.id}`}
+                        >
+                          Edit
+                        </a>
                         {incident.status === 'draft' && (
                           <button
                             type="button"

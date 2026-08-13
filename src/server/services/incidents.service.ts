@@ -113,6 +113,85 @@ export async function close(incidentId: string, admin: AdminSession) {
   });
 }
 
+export async function getById(incidentId: string) {
+  const db = getSql();
+  const row = await incidentsRepo.findByIdForAdmin(db, incidentId);
+  if (!row) throw AppError.notFound('Incident not found');
+  return row;
+}
+
+export interface UpdateIncidentInput {
+  title?: string;
+  description?: string;
+  center?: { latitude: number; longitude: number };
+  zoom?: number;
+  reportingArea?: unknown;
+  displaySettings?: unknown;
+  reportExpiryDays?: number | null;
+}
+
+const updateGeoJsonAreaSchema = z.union([
+  z.object({ type: z.literal('Polygon'), coordinates: z.array(z.unknown()) }),
+  z.object({ type: z.literal('MultiPolygon'), coordinates: z.array(z.unknown()) }),
+]);
+
+export async function update(incidentId: string, input: UpdateIncidentInput, admin: AdminSession) {
+  const db = getSql();
+  const existing = await incidentsRepo.findByIdForAdmin(db, incidentId);
+  if (!existing) throw AppError.notFound('Incident not found');
+
+  const sets: {
+    title?: string;
+    description?: string;
+    longitude?: number;
+    latitude?: number;
+    zoom?: number;
+    reportingAreaGeoJson?: string | null;
+    displaySettings?: unknown;
+    reportExpiryDays?: number | null;
+  } = {};
+
+  if (input.title !== undefined) sets.title = input.title;
+  if (input.description !== undefined) sets.description = input.description || undefined;
+  if (input.center !== undefined) {
+    sets.longitude = input.center.longitude;
+    sets.latitude = input.center.latitude;
+  }
+  if (input.zoom !== undefined) sets.zoom = input.zoom;
+
+  if (input.reportingArea !== undefined) {
+    if (input.reportingArea === null) {
+      sets.reportingAreaGeoJson = null;
+    } else {
+      const parsedArea = updateGeoJsonAreaSchema.safeParse(input.reportingArea);
+      if (!parsedArea.success)
+        throw AppError.badRequest('Reporting area must be a GeoJSON Polygon or MultiPolygon');
+      sets.reportingAreaGeoJson = JSON.stringify(parsedArea.data);
+    }
+  }
+
+  if (input.displaySettings !== undefined) {
+    sets.displaySettings = input.displaySettings;
+  }
+
+  if (input.reportExpiryDays !== undefined) {
+    sets.reportExpiryDays = input.reportExpiryDays ?? null;
+  }
+
+  const changed = await incidentsRepo.update(db, incidentId, sets);
+  if (!changed) throw AppError.badRequest('No changes to save');
+
+  const changedFields = Object.keys(sets);
+  await auditRepo.record(db, {
+    incidentId,
+    actorType: 'admin',
+    actorId: admin.id,
+    eventType: 'incident_updated',
+    metadata: { changedFields },
+  });
+  return { id: incidentId, changedFields };
+}
+
 export function listForAdmin() {
   return incidentsRepo.listForAdmin(getSql());
 }

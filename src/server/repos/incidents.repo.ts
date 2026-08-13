@@ -128,6 +128,75 @@ export function close(db: postgres.Sql, id: string) {
   `.then((rows) => rows.length > 0);
 }
 
+export interface IncidentDetailRow extends IncidentPublicRow {
+  closedAt: string | null;
+  createdAt: string;
+}
+
+export function findByIdForAdmin(db: postgres.Sql, id: string) {
+  return db<IncidentDetailRow[]>`
+    SELECT i.id, i.public_id AS "publicId", i.canonical_slug AS slug, i.title, i.description,
+      i.status::text AS status, i.published_at::text AS "publishedAt",
+      i.created_at::text AS "createdAt",
+      i.closed_at::text AS "closedAt",
+      i.updated_at::text AS "updatedAt",
+      ST_X(i.initial_center::geometry) AS longitude, ST_Y(i.initial_center::geometry) AS latitude,
+      i.initial_zoom::float AS zoom,
+      CASE WHEN i.reporting_area IS NULL THEN NULL ELSE ST_AsGeoJSON(i.reporting_area::geometry)::jsonb END AS "reportingArea",
+      i.form_schema AS "formSchema", i.display_settings AS "displaySettings",
+      i.report_expiry_days AS "reportExpiryDays"
+    FROM incidents i
+    WHERE i.id = ${id}
+    LIMIT 1
+  `.then((rows) => rows[0] ?? null);
+}
+
+export function update(
+  db: postgres.Sql,
+  id: string,
+  update: {
+    title?: string;
+    description?: string;
+    longitude?: number;
+    latitude?: number;
+    zoom?: number;
+    reportingAreaGeoJson?: string | null;
+    displaySettings?: unknown;
+    reportExpiryDays?: number | null;
+  },
+) {
+  return db.begin(async (tx) => {
+    const clauses: ReturnType<typeof tx>[] = [];
+
+    if (update.title !== undefined) clauses.push(tx`title = ${update.title}`);
+    if (update.description !== undefined) clauses.push(tx`description = ${update.description}`);
+    if (update.longitude !== undefined && update.latitude !== undefined) {
+      const point = `SRID=4326;POINT(${update.longitude} ${update.latitude})`;
+      clauses.push(tx`initial_center = ST_GeogFromText(${point})`);
+    }
+    if (update.zoom !== undefined) clauses.push(tx`initial_zoom = ${update.zoom}`);
+    if (update.reportingAreaGeoJson !== undefined) {
+      if (update.reportingAreaGeoJson === null) {
+        clauses.push(tx`reporting_area = NULL`);
+      } else {
+        clauses.push(tx`reporting_area = ST_Multi(ST_SetSRID(ST_GeomFromGeoJSON(${update.reportingAreaGeoJson}), 4326))::geography`);
+      }
+    }
+    if (update.displaySettings !== undefined) {
+      clauses.push(tx`display_settings = ${tx.json(update.displaySettings as never)}`);
+    }
+    if (update.reportExpiryDays !== undefined) {
+      clauses.push(tx`report_expiry_days = ${update.reportExpiryDays}`);
+    }
+
+    if (clauses.length === 0) return false;
+    clauses.push(tx`updated_at = now()`);
+    const setClause = clauses.reduce((acc, fragment) => tx`${acc}, ${fragment}`);
+    const rows = await tx<{ id: string }[]>`UPDATE incidents SET ${setClause} WHERE id = ${id} RETURNING id`;
+    return rows.length > 0;
+  });
+}
+
 export function geofenceAllows(db: postgres.Sql, incidentId: string, pointWkt: string) {
   return db<{ allowed: boolean }[]>`
     SELECT reporting_area IS NULL OR ST_Covers(reporting_area, ST_GeogFromText(${pointWkt})) AS allowed
