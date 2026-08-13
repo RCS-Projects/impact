@@ -18,7 +18,8 @@
     "test:e2e": "playwright test",
     "db:migrate": "tsx scripts/migrate.ts",
     "db:seed": "tsx scripts/seed.ts",
-    "db:reset": "tsx scripts/migrate.ts --reset"
+    "db:reset": "tsx scripts/migrate.ts --reset",
+    "prune:expired": "tsx scripts/prune-expired.ts"
   },
   "dependencies": {
     "bcryptjs": "2.4.3",
