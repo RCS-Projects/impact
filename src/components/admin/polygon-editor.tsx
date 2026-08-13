@@ -148,7 +148,7 @@ export function PolygonEditor({
       </div>
       {drawing && (
         <p className="hint" style={{ marginBottom: '0.4rem' }}>
-          Click to place vertices. The shape auto-closes at 3+ points. Click "Done" when finished.
+          Click to place vertices. The shape auto-closes at 3+ points. Click Done when finished.
         </p>
       )}
       <div
