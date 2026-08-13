@@ -35,3 +35,36 @@ export function listForIncident(db: postgres.Sql, incidentId: string, limit = 20
     LIMIT ${Math.min(limit, 500)}
   `;
 }
+
+export interface AuditEventRow {
+  id: string;
+  incidentId: string | null;
+  incidentTitle: string | null;
+  reportId: string | null;
+  actorType: string;
+  actorId: string | null;
+  eventType: string;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+}
+
+export function listGlobal(
+  db: postgres.Sql,
+  options: { incidentId?: string; limit?: number; offset?: number } = {},
+) {
+  const limit = Math.min(options.limit ?? 100, 500);
+  const offset = options.offset ?? 0;
+  return db<AuditEventRow[]>`
+    SELECT a.id, a.incident_id AS "incidentId",
+      i.title AS "incidentTitle",
+      a.report_id AS "reportId",
+      a.actor_type::text AS "actorType", a.actor_id AS "actorId",
+      a.event_type AS "eventType", a.metadata,
+      a.created_at::text AS "createdAt"
+    FROM audit_events a
+    LEFT JOIN incidents i ON i.id = a.incident_id
+    ${options.incidentId ? db`WHERE a.incident_id = ${options.incidentId}` : db``}
+    ORDER BY a.created_at DESC
+    LIMIT ${limit} OFFSET ${offset}
+  `;
+}
