@@ -163,6 +163,7 @@ export function update(
     reportingAreaGeoJson?: string | null;
     displaySettings?: unknown;
     reportExpiryDays?: number | null;
+    formSchema?: unknown;
   },
 ) {
   return db.begin(async (tx) => {
@@ -187,6 +188,9 @@ export function update(
     }
     if (update.reportExpiryDays !== undefined) {
       clauses.push(tx`report_expiry_days = ${update.reportExpiryDays}`);
+    }
+    if (update.formSchema !== undefined) {
+      clauses.push(tx`form_schema = ${tx.json(update.formSchema as never)}`);
     }
 
     if (clauses.length === 0) return false;

@@ -3,6 +3,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCsrfToken } from '@/lib/csrf';
 import { PolygonEditor } from '@/components/admin/polygon-editor';
+import { FormBuilder } from '@/components/admin/form-builder';
+import type { FormField } from '@/server/schema/form-schema';
 
 interface IncidentData {
   id: string;
@@ -74,6 +76,7 @@ export function IncidentEditor({ incidentId }: { incidentId: string }) {
       zoom: incident.zoom,
       reportingArea: incident.reportingArea,
       reportExpiryDays: incident.reportExpiryDays,
+      formSchema: incident.formSchema,
     };
     const res = await adminApi(`/api/admin/incidents/${incidentId}`, 'PATCH', body);
     const data = (await res.json().catch(() => ({}))) as { error?: string; changedFields?: string[] };
@@ -245,6 +248,19 @@ export function IncidentEditor({ incidentId }: { incidentId: string }) {
             />
           </label>
         </div>
+      </section>
+
+      <section className="card">
+        <h2>Report form</h2>
+        <p className="hint" style={{ marginBottom: '0.6rem' }}>
+          Define what information reporters submit. At least one field is required.
+        </p>
+        <FormBuilder
+          value={(incident.formSchema as { fields: FormField[] })?.fields ?? []}
+          onChange={(fields) =>
+            updateField('formSchema', { version: 1, fields })
+          }
+        />
       </section>
 
       <section className="card">

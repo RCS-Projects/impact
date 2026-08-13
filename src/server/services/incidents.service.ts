@@ -128,6 +128,7 @@ export interface UpdateIncidentInput {
   reportingArea?: unknown;
   displaySettings?: unknown;
   reportExpiryDays?: number | null;
+  formSchema?: { version: 1; fields: unknown[] };
 }
 
 const updateGeoJsonAreaSchema = z.union([
@@ -149,6 +150,7 @@ export async function update(incidentId: string, input: UpdateIncidentInput, adm
     reportingAreaGeoJson?: string | null;
     displaySettings?: unknown;
     reportExpiryDays?: number | null;
+    formSchema?: unknown;
   } = {};
 
   if (input.title !== undefined) sets.title = input.title;
@@ -176,6 +178,10 @@ export async function update(incidentId: string, input: UpdateIncidentInput, adm
 
   if (input.reportExpiryDays !== undefined) {
     sets.reportExpiryDays = input.reportExpiryDays ?? null;
+  }
+
+  if (input.formSchema !== undefined) {
+    sets.formSchema = input.formSchema;
   }
 
   const changed = await incidentsRepo.update(db, incidentId, sets);
