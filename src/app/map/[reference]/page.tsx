@@ -1,38 +1,40 @@
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { findPublicIncident } from '@/lib/incidents';
-import { IncidentMap } from '@/components/incident-map';
+import type { FieldView } from '@/shared/types';
+import { IncidentMapView } from '@/components/map/incident-map-view';
+import { deriveFilters, incidentFormSchema, primaryColorField } from '@/server/schema/form-schema';
+import { getPublicIncident } from '@/server/services/incidents.service';
 
 export const dynamic = 'force-dynamic';
-export default async function IncidentMapPage({ params }: { params: { reference: string } }) {
-  const incident = await findPublicIncident(params.reference);
+
+interface PageProps {
+  params: { reference: string };
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const incident = await getPublicIncident(params.reference);
+  return { title: incident?.title ?? 'Incident map' };
+}
+
+export default async function IncidentMapPage({ params }: PageProps) {
+  const incident = await getPublicIncident(params.reference);
   if (!incident) notFound();
-  const closed = incident.status === 'closed';
+  const schema = incidentFormSchema.parse(incident.formSchema);
+  const filters = deriveFilters(schema);
+  const colorField = primaryColorField(schema);
+
   return (
-    <main className="shell">
-      <p className="eyebrow">CROWDSOURCED INCIDENT MAP</p>
-      <h1>{incident.title}</h1>
-      {incident.description && <p>{incident.description}</p>}
-      <p>
-        <strong>
-          {closed
-            ? 'This incident is closed.'
-            : 'Reports are crowdsourced and may not be independently verified.'}
-        </strong>
-      </p>
-      {Boolean(incident.reportingArea) && (
-        <p>Reports are accepted only within the outlined area.</p>
-      )}
-      <IncidentMap
-        reference={params.reference}
-        center={[incident.initialLongitude, incident.initialLatitude]}
-        zoom={incident.initialZoom}
-        reportingArea={incident.reportingArea}
-      />
-      {!closed && (
-        <a className="button" href={`/map/${params.reference}/report`}>
-          Submit a report
-        </a>
-      )}
-    </main>
+    <IncidentMapView
+      reference={params.reference}
+      title={incident.title}
+      description={incident.description}
+      incidentStatus={incident.status === 'live' ? 'live' : 'closed'}
+      center={[incident.longitude, incident.latitude]}
+      zoom={incident.zoom}
+      reportingArea={incident.reportingArea}
+      fields={schema.fields as FieldView[]}
+      filters={filters}
+      colorFieldKey={colorField?.key ?? null}
+    />
   );
 }

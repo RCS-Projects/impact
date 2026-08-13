@@ -1,23 +1,28 @@
-FROM node:20-bookworm-slim AS deps
+FROM node:18-alpine AS deps
 WORKDIR /app
-COPY package.json package-lock.json* ./
+COPY package.json package-lock.json ./
 RUN npm ci
 
-FROM node:20-bookworm-slim AS builder
+FROM node:18-alpine AS build
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
-FROM node:20-bookworm-slim AS runner
+FROM node:18-alpine AS runtime
 WORKDIR /app
-ENV NODE_ENV=production
-RUN groupadd --system --gid 1001 impact && useradd --system --uid 1001 --gid impact impact
-COPY --from=builder --chown=impact:impact /app/.next/standalone ./
-COPY --from=builder --chown=impact:impact /app/.next/static ./.next/static
-COPY --from=builder --chown=impact:impact /app/public ./public
+ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1
+RUN addgroup -S impact && adduser -S impact -G impact
+COPY --from=build --chown=impact:impact /app/.next ./.next
+COPY --from=build --chown=impact:impact /app/node_modules ./node_modules
+COPY --from=build --chown=impact:impact /app/public ./public
+COPY --from=build --chown=impact:impact /app/package.json ./package.json
+COPY --from=build --chown=impact:impact /app/db ./db
+COPY --from=build --chown=impact:impact /app/scripts ./scripts
+COPY --from=build --chown=impact:impact /app/src ./src
+COPY --from=build --chown=impact:impact /app/tsconfig.json ./tsconfig.json
+COPY --from=build --chown=impact:impact /app/next.config.mjs ./next.config.mjs
 USER impact
 EXPOSE 3000
-ENV PORT=3000 HOSTNAME=0.0.0.0
-CMD ["node", "server.js"]
-
+CMD ["npm", "run", "start"]

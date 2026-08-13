@@ -1,4 +1,4 @@
 declare module 'bcryptjs' {
-  export function hash(value: string, saltRounds: number): Promise<string>;
-  export function compare(value: string, encrypted: string): Promise<boolean>;
+  export function hash(password: string, rounds: number): Promise<string>;
+  export function compare(password: string, hash: string): Promise<boolean>;
 }

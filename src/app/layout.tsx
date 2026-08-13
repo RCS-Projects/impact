@@ -2,11 +2,12 @@ import type { Metadata } from 'next';
 import './styles.css';
 
 export const metadata: Metadata = {
-  title: 'Impact System',
-  description: 'Crowdsourced incident maps for Canadian communities.',
+  title: { default: 'Impact Maps', template: '%s · Impact Maps' },
+  description:
+    'Community crowdsourced incident maps. Reports are crowdsourced and may not be independently verified.',
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body>{children}</body>

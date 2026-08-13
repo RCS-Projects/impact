@@ -1,14 +1,13 @@
 import { NextResponse } from 'next/server';
-import { getSql } from '@/lib/db';
+import { getSql } from '@/server/db/client';
 
-export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     await getSql()`SELECT 1`;
-    return NextResponse.json({ status: 'ready' }, { headers: { 'Cache-Control': 'no-store' } });
+    return NextResponse.json({ ready: true }, { headers: { 'Cache-Control': 'no-store' } });
   } catch {
     return NextResponse.json(
-      { status: 'not_ready' },
+      { ready: false },
       { status: 503, headers: { 'Cache-Control': 'no-store' } },
     );
   }

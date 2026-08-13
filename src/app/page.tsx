@@ -1,14 +1,42 @@
-export default function HomePage() {
+import Link from 'next/link';
+import { listPublicLive } from '@/server/services/incidents.service';
+
+export const dynamic = 'force-dynamic';
+
+export default async function LandingPage() {
+  const incidents = await listPublicLive();
   return (
     <main className="shell">
-      <p className="eyebrow">IMPACT SYSTEM</p>
-      <h1>Crowdsourced incident maps for Canadian communities.</h1>
+      <p className="eyebrow">Community incident maps</p>
+      <h1 className="page-title">See what&apos;s happening. Share what you know.</h1>
       <p>
-        Administrators can publish focused maps and residents can safely share local conditions.
+        Impact Maps are crowdsourced community maps for storms, outages, road conditions, and other
+        local incidents. No account needed — open a map, drop a pin, and tell us what you are
+        experiencing. Your location can stay private.
       </p>
-      <a className="button" href="/admin">
-        Administrator sign in
-      </a>
+      <p className="disclaimer">
+        Reports are crowdsourced and may not be independently verified. This is not an official
+        emergency alerting system.
+      </p>
+
+      <h2 style={{ marginTop: '2rem', marginBottom: '0.75rem' }}>Live maps</h2>
+      {incidents.length === 0 && <p className="hint">No live incident maps right now.</p>}
+      {incidents.map((incident) => (
+        <Link
+          key={incident.reference}
+          className="incident-card"
+          href={`/map/${incident.reference}`}
+        >
+          <h2>{incident.title}</h2>
+          {incident.description && <p>{incident.description}</p>}
+        </Link>
+      ))}
+
+      <div className="buttons">
+        <Link className="button button-secondary" href="/admin">
+          Administration
+        </Link>
+      </div>
     </main>
   );
 }

@@ -1,23 +1,71 @@
 # Impact System
 
-Self-hosted crowdsourced incident maps for Canadian communities. Impact System keeps submitted coordinates, edit tokens, network identifiers, and public map data separated by design.
+A reusable, self-hosted, crowdsourced incident-map platform. Administrators launch a map for a
+specific incident (storm damage, cellular outage, road conditions, or anything custom); the
+public submits location-based reports with exact or privacy-protected locations.
 
-## Local setup
+Reports are crowdsourced and may not be independently verified. Impact is not an official
+emergency alerting system.
 
-1. Copy `.env.example` to `.env` and replace every secret placeholder.
-2. Run `docker-compose up -d db`.
-3. Run `npm install`, `npm run db:migrate`, and `npm run db:seed`.
-4. Run `npm run dev`.
+## Stack
 
-For production, build and start with `docker-compose up -d --build`. Route the Cloudflare Tunnel hostname to `http://127.0.0.1:3000`; do not expose Postgres.
+- Next.js 14 (App Router) + TypeScript strict
+- PostgreSQL 16 + PostGIS 3.4
+- MapLibre GL JS with OpenStreetMap-compatible tiles (OpenFreeMap by default)
+- Private Nominatim proxy for Canadian address search (never exposed to browsers)
+- Cloudflare Turnstile CAPTCHA (fails closed in production)
+- Docker Compose deployment
 
-## Commands
+## Quick start (development)
 
-- `npm run format:check`
-- `npm run lint`
-- `npm run typecheck`
-- `npm test`
-- `npm run build`
-- `npm run db:migrate`
+```bash
+cp .env.example .env        # fill in secrets: openssl rand -base64 48
+docker-compose up -d --build
+docker-compose exec app npm run db:migrate
+docker-compose exec app npm run db:seed
+```
 
-See `docs/` for trust boundaries, the data model, deployment configuration, and known limitations.
+Bootstrap the first administrator (one-time; requires `ADMIN_BOOTSTRAP_EMAIL` and
+`ADMIN_BOOTSTRAP_SECRET` in `.env`):
+
+```bash
+curl -X POST http://localhost:3000/api/admin/setup \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"you@example.ca","password":"a-long-strong-password","secret":"<ADMIN_BOOTSTRAP_SECRET>"}'
+```
+
+Then sign in at `/admin` (username or full email).
+
+## Scripts
+
+| Command                   | Purpose                                       |
+| ------------------------- | --------------------------------------------- |
+| `npm run dev`             | Next.js dev server                            |
+| `npm run build` / `start` | Production build / serve                      |
+| `npm run lint`            | ESLint                                        |
+| `npm run typecheck`       | tsc --noEmit                                  |
+| `npm test`                | Vitest unit + PostGIS integration tests       |
+| `npm run test:e2e`        | Playwright end-to-end (needs a running stack) |
+| `npm run db:migrate`      | Apply SQL migrations                          |
+| `npm run db:seed`         | Seed preset templates                         |
+| `npm run db:reset`        | Drop and re-apply schema (destructive)        |
+
+Integration tests use `TEST_DATABASE_URL` when set (point it at a disposable PostGIS
+instance); otherwise they use `DATABASE_URL`. They are skipped automatically when no
+database is reachable.
+
+## Key documentation
+
+- `docs/architecture.md` — system design and code layout
+- `docs/privacy-security.md` — privacy model, threat controls, and hard rules
+- `docs/runbook.md` — deployment, backup/restore, and operations
+
+## Milestone status
+
+Milestone 1 (this tree): foundation, admin auth, preset templates, incident creation,
+permanent URLs, public map with clustering/filters/counts, report submission with exact and
+approximate locations, Nominatim proxy, spam protection, private report editing, basic
+moderation, Docker deployment, tests.
+
+Planned next: visual form builder, template manager, polygon drawing editor, photo uploads
+with metadata stripping, report expiry, exports, live updates, integrations.

@@ -1,8 +1,11 @@
-node_modules
-.next
 .git
+.next
+node_modules
 .env
-coverage
+.env.*
+tests
 playwright-report
 test-results
-*.tsbuildinfo
+coverage
+*.md
+!README.md
