@@ -129,6 +129,9 @@ export function AdminApp({ signedIn }: { signedIn: boolean }) {
           <h1 className="page-title">Incident maps</h1>
         </div>
         <div className="buttons" style={{ marginTop: 0 }}>
+          <a className="button button-secondary button-sm" href="/admin/templates">
+            Templates
+          </a>
           <a className="button button-secondary button-sm" href="/admin/moderation">
             Moderation queue
           </a>
