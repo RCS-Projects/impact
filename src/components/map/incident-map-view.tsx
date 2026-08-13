@@ -186,7 +186,7 @@ export function IncidentMapView(props: IncidentMapViewProps) {
         filter: ['!', ['has', 'point_count']],
         paint: {
           'circle-color': ['get', 'color'],
-          'circle-radius': 8,
+          'circle-radius': 10,
           'circle-stroke-color': '#0d1215',
           'circle-stroke-width': 2,
         },
@@ -310,7 +310,7 @@ export function IncidentMapView(props: IncidentMapViewProps) {
       <header className="topbar">
         <div>
           <div className="topbar-title">{props.title}</div>
-          {props.description && <div className="hint">{props.description}</div>}
+          {props.description && <div className="hint topbar-desc">{props.description}</div>}
         </div>
         <span className={`chip ${props.incidentStatus === 'live' ? 'chip-live' : 'chip-closed'}`}>
           {props.incidentStatus === 'live' ? 'Receiving reports' : 'Closed to new reports'}
@@ -331,7 +331,7 @@ export function IncidentMapView(props: IncidentMapViewProps) {
           Filters
         </button>
         {props.incidentStatus === 'live' && (
-          <a className="button button-sm" href={`/map/${props.reference}/report`}>
+          <a className="button button-sm topbar-cta" href={`/map/${props.reference}/report`}>
             Submit a Report
           </a>
         )}
@@ -465,9 +465,16 @@ export function IncidentMapView(props: IncidentMapViewProps) {
         )}
 
         {loadError && <div className="map-note notice-error">{loadError}</div>}
-        <div className="map-note">
-          Reports are crowdsourced and may not be independently verified.
-        </div>
+        {!selected && (
+          <div className="map-note">
+            Reports are crowdsourced and may not be independently verified.
+          </div>
+        )}
+        {props.incidentStatus === 'live' && (
+          <a className="button fab" href={`/map/${props.reference}/report`} aria-label="Submit a report">
+            + Report
+          </a>
+        )}
       </div>
     </div>
   );

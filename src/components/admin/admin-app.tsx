@@ -165,7 +165,7 @@ export function AdminApp({ signedIn }: { signedIn: boolean }) {
               <option value="cellular-outage">Cellular Outage</option>
             </select>
           </label>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.6rem' }}>
+          <div className="grid-3">
             <label className="field">
               Latitude
               <input name="latitude" type="number" step="any" required defaultValue="45.4215" />
