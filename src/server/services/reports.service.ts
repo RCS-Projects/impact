@@ -229,3 +229,19 @@ export async function updateReport(reportId: string, token: string, input: Updat
   });
   log('report_updated', { reportId, privacy: input.privacy, movedMeters: Math.round(movedMeters) });
 }
+
+export async function deleteReport(reportId: string, editToken: string) {
+  const db = getSql();
+  const row = await reportsPrivateRepo.getForEdit(db, reportId);
+  if (!row) throw AppError.notFound('Report not found');
+  if (!(await verifyEditToken(editToken, row.editTokenHash)))
+    throw AppError.forbidden('Invalid edit token');
+  const deleted = await reportsPrivateRepo.deleteReport(db, reportId);
+  if (!deleted) throw AppError.notFound('Report not found');
+  await auditRepo.record(db, {
+    incidentId: row.incidentId,
+    reportId,
+    actorType: 'public',
+    eventType: 'report_deleted_by_owner',
+  });
+}

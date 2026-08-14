@@ -21,6 +21,7 @@ interface EditPayload {
 export function ReportEditPage({ reportId, token }: { reportId: string; token: string }) {
   const [payload, setPayload] = useState<EditPayload | null>(null);
   const [error, setError] = useState('');
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     void (async () => {
@@ -36,6 +37,23 @@ export function ReportEditPage({ reportId, token }: { reportId: string; token: s
       setPayload((await response.json()) as EditPayload);
     })();
   }, [reportId, token]);
+
+  async function deleteReport() {
+    if (!confirm('Delete this report? This cannot be undone.')) return;
+    setDeleting(true);
+    const response = await fetch(`/api/reports/${reportId}/edit/${token}`, {
+      method: 'DELETE',
+    });
+    if (!response.ok) {
+      const data = (await response.json().catch(() => ({}))) as { error?: string };
+      setError(data.error ?? 'Could not delete report');
+      setDeleting(false);
+      return;
+    }
+    setPayload(null);
+    setError('');
+    window.location.href = '/';
+  }
 
   return (
     <main className="shell">
@@ -69,6 +87,20 @@ export function ReportEditPage({ reportId, token }: { reportId: string; token: s
               }}
             />
           )}
+          <div style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid var(--border)' }}>
+            <button
+              type="button"
+              className="button button-sm"
+              style={{ color: '#e5534b' }}
+              disabled={deleting}
+              onClick={() => void deleteReport()}
+            >
+              {deleting ? 'Deleting...' : 'Delete this report'}
+            </button>
+            <span className="hint" style={{ marginLeft: '0.5rem', fontSize: '0.82rem' }}>
+              This cannot be undone.
+            </span>
+          </div>
         </>
       )}
     </main>

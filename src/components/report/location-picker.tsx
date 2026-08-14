@@ -56,8 +56,20 @@ export function LocationPicker({
       }
     });
 
-    map.on('click', (event) => {
-      setMarker(map, { latitude: event.lngLat.lat, longitude: event.lngLat.lng });
+    map.on('click', async (event) => {
+      const point = { latitude: event.lngLat.lat, longitude: event.lngLat.lng };
+      setMarker(map, point);
+      try {
+        const res = await fetch(`/api/geocode/reverse?lat=${point.latitude}&lon=${point.longitude}`);
+        if (res.ok) {
+          const data = (await res.json()) as { result: { label?: string; placeLabel?: string } | null };
+          if (data.result?.placeLabel) {
+            setMarker(map, { ...point, placeLabel: data.result.placeLabel });
+          }
+        }
+      } catch {
+        // ignore reverse geocode errors
+      }
     });
 
     mapRef.current = map;

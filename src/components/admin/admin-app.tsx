@@ -155,6 +155,9 @@ export function AdminApp({ signedIn }: { signedIn: boolean }) {
           <a className="button button-secondary button-sm" href="/admin/audit">
             Audit log
           </a>
+          <a className="button button-secondary button-sm" href="/admin/users">
+            Users
+          </a>
           <button type="button" className="button button-secondary button-sm" onClick={logout}>
             Sign out
           </button>

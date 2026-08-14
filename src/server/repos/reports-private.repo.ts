@@ -109,3 +109,10 @@ export function getTrueLocation(db: postgres.Sql, reportId: string) {
     LIMIT 1
   `.then((rows) => rows[0] ?? null);
 }
+
+export function deleteReport(db: postgres.Sql, reportId: string) {
+  return db<{ id: string }[]>`
+    DELETE FROM reports WHERE id = ${reportId}
+    RETURNING id
+  `.then((rows) => rows.length > 0);
+}

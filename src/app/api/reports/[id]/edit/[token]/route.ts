@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { handleApi } from '@/server/errors';
 import { noStore } from '@/server/http';
-import { getEditableReport, updateReport } from '@/server/services/reports.service';
+import { getEditableReport, updateReport, deleteReport } from '@/server/services/reports.service';
 
 export const GET = handleApi(
   async (_request: NextRequest, { params }: { params: { id: string; token: string } }) => {
@@ -41,6 +41,13 @@ export const PUT = handleApi(
   async (request: NextRequest, { params }: { params: { id: string; token: string } }) => {
     const data = updateInput.parse(await request.json().catch(() => null));
     await updateReport(params.id, params.token, data);
+    return NextResponse.json({ ok: true }, { headers: noStore() });
+  },
+);
+
+export const DELETE = handleApi(
+  async (_request: NextRequest, { params }: { params: { id: string; token: string } }) => {
+    await deleteReport(params.id, params.token);
     return NextResponse.json({ ok: true }, { headers: noStore() });
   },
 );
