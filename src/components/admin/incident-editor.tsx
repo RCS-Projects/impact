@@ -318,6 +318,27 @@ export function IncidentEditor({ incidentId }: { incidentId: string }) {
           </>}
           <dt className="hint">Last updated</dt>
           <dd>{new Date(incident.updatedAt).toLocaleString()}</dd>
+          <dt className="hint">Export</dt>
+          <dd>
+            <div className="buttons" style={{ marginTop: 0 }}>
+              <a
+                className="button button-secondary button-sm"
+                href={`/api/admin/incidents/${incidentId}/export?format=csv`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                CSV
+              </a>
+              <a
+                className="button button-secondary button-sm"
+                href={`/api/admin/incidents/${incidentId}/export?format=json`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                JSON
+              </a>
+            </div>
+          </dd>
           <dt className="hint">Public URL</dt>
           <dd>
             {incident.status === 'draft' ? (

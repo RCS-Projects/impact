@@ -251,9 +251,20 @@ export function IncidentMapView(props: IncidentMapViewProps) {
   }, [mapReady, activeStatuses, fieldFilters, loadReports]);
 
   useEffect(() => {
-    const interval = setInterval(() => void loadReports(), 30_000);
-    return () => clearInterval(interval);
-  }, [loadReports]);
+    const es = new EventSource(`/api/incidents/${props.reference}/events`);
+    es.addEventListener('report_created', () => {
+      void loadReports();
+    });
+    es.addEventListener('report_updated', () => {
+      void loadReports();
+    });
+    es.onerror = () => {
+      es.close();
+      const fallback = setInterval(() => void loadReports(), 30_000);
+      return () => clearInterval(fallback);
+    };
+    return () => es.close();
+  }, [props.reference, loadReports]);
 
   useEffect(() => {
     const map = mapRef.current;

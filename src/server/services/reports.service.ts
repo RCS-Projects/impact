@@ -118,6 +118,14 @@ export async function createReport(
     privacy: input.privacy,
     status,
   });
+
+  try {
+    const { broadcastToIncident } = await import('@/app/api/incidents/[reference]/events/route');
+    broadcastToIncident(input.reference, 'report_created', JSON.stringify({ reportId, status }));
+  } catch {
+    // SSE module may not be loadable server-side in all contexts
+  }
+
   return { reportId, editToken, browserToken, flagged: status === 'flagged' };
 }
 
