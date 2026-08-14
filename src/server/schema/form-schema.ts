@@ -12,6 +12,7 @@ export const fieldTypes = [
   'boolean',
   'datetime',
   'info',
+  'photo',
 ] as const;
 export type FieldType = (typeof fieldTypes)[number];
 
@@ -113,6 +114,19 @@ export function validateAnswers(
         )
           throw AppError.badRequest(`${field.label} has invalid choices`);
         output[field.key] = [...new Set(answer)];
+        break;
+      }
+      case 'photo': {
+        if (
+          answer !== null &&
+          answer !== undefined &&
+          (typeof answer !== 'object' ||
+            typeof (answer as Record<string, unknown>).uploadId !== 'string' ||
+            typeof (answer as Record<string, unknown>).url !== 'string')
+        ) {
+          throw AppError.badRequest(`${field.label} must be a valid photo upload`);
+        }
+        if (answer) output[field.key] = answer;
         break;
       }
       default:

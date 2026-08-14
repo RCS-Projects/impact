@@ -60,7 +60,27 @@ export function ReportForm({
     setSubmitting(true);
     setError('');
     try {
+      const photoFields = fields.filter((f) => f.type === 'photo');
+      const photoAnswers: Record<string, { uploadId: string; url: string }> = {};
+      for (const field of photoFields) {
+        const fileInput = document.getElementById(`f-${field.key}`) as HTMLInputElement | null;
+        const file = fileInput?.files?.[0];
+        if (file) {
+          const formData = new FormData();
+          formData.append('file', file);
+          const uploadRes = await fetch('/api/uploads', { method: 'POST', body: formData });
+          if (!uploadRes.ok) {
+            const errData = (await uploadRes.json().catch(() => ({}))) as { error?: string };
+            throw new Error(errData.error ?? `Failed to upload ${field.label}`);
+          }
+          const uploadData = (await uploadRes.json()) as { id: string; url: string };
+          photoAnswers[field.key] = { uploadId: uploadData.id, url: uploadData.url };
+        }
+      }
       const answers = collectAnswers(fields, form);
+      for (const [key, photo] of Object.entries(photoAnswers)) {
+        answers[key] = photo;
+      }
       const body = {
         latitude: point.latitude,
         longitude: point.longitude,

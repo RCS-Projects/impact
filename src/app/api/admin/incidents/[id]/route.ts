@@ -17,7 +17,7 @@ const formFieldInput = z.object({
   key: z.string().regex(/^[a-z][a-z0-9_]{0,63}$/),
   type: z.enum([
     'short_text', 'long_text', 'single_select', 'multi_select',
-    'radio', 'checkbox', 'boolean', 'datetime', 'info',
+    'radio', 'checkbox', 'boolean', 'datetime', 'info', 'photo',
   ]),
   label: z.string().min(1).max(160),
   helpText: z.string().max(500).optional(),

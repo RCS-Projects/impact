@@ -27,6 +27,7 @@ const TYPE_LABELS: Record<FieldType, string> = {
   boolean: 'Yes / No',
   datetime: 'Date & time',
   info: 'Info text',
+  photo: 'Photo upload',
 };
 
 export function FormBuilder({

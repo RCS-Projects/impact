@@ -456,7 +456,18 @@ export function IncidentMapView(props: IncidentMapViewProps) {
                   return (
                     <div className="detail-row" key={field.key}>
                       <dt>{field.label}</dt>
-                      <dd>{choiceLabel(props.fields, field.key, value)}</dd>
+                      <dd>
+                        {field.type === 'photo' && value && typeof value === 'object' && 'url' in value ? (
+                          <img
+                            src={(value as { url: string }).url}
+                            alt={field.label}
+                            loading="lazy"
+                            style={{ maxWidth: '100%', maxHeight: 200, borderRadius: 4 }}
+                          />
+                        ) : (
+                          choiceLabel(props.fields, field.key, value)
+                        )}
+                      </dd>
                     </div>
                   );
                 })}

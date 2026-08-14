@@ -178,6 +178,24 @@ export function FieldInput({ field, defaultValue }: { field: FieldView; defaultV
           />
         </label>
       );
+    case 'photo': {
+      const existing = defaultValue as { uploadId?: string; url?: string } | null;
+      return (
+        <label className="field" htmlFor={`f-${field.key}`}>
+          {field.label}
+          {field.required ? ' *' : ''}
+          {hint}
+          {existing?.url && (
+            <img
+              src={existing.url}
+              alt={field.label}
+              style={{ maxWidth: 200, maxHeight: 200, borderRadius: 4, display: 'block', marginBottom: '0.3rem' }}
+            />
+          )}
+          <input id={`f-${field.key}`} name={field.key} type="file" accept="image/jpeg,image/png,image/webp" />
+        </label>
+      );
+    }
     default:
       return null;
   }
@@ -187,6 +205,7 @@ export function collectAnswers(fields: FieldView[], form: FormData): Record<stri
   const answers: Record<string, unknown> = {};
   for (const field of fields) {
     if (field.type === 'info') continue;
+    if (field.type === 'photo') continue;
     switch (field.type) {
       case 'multi_select':
         answers[field.key] = form.getAll(field.key);
@@ -212,6 +231,10 @@ export function collectAnswers(fields: FieldView[], form: FormData): Record<stri
 
 export function choiceLabel(fields: FieldView[], key: string, value: unknown): string {
   const field = fields.find((f) => f.key === key);
+  if (field?.type === 'photo') {
+    if (value && typeof value === 'object' && 'url' in value) return '[photo]';
+    return String(value ?? '');
+  }
   if (!field?.choices) return String(value);
   if (Array.isArray(value))
     return value
