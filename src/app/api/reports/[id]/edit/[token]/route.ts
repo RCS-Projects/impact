@@ -46,8 +46,9 @@ export const PUT = handleApi(
 );
 
 export const DELETE = handleApi(
-  async (_request: NextRequest, { params }: { params: { id: string; token: string } }) => {
-    await deleteReport(params.id, params.token);
+  async (request: NextRequest, { params }: { params: { id: string; token: string } }) => {
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? '127.0.0.1';
+    await deleteReport(params.id, params.token, ip);
     return NextResponse.json({ ok: true }, { headers: noStore() });
   },
 );

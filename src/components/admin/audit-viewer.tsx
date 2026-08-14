@@ -16,13 +16,18 @@ interface AuditEvent {
 const EVENT_LABELS: Record<string, string> = {
   admin_login: 'Admin login',
   admin_bootstrapped: 'Admin bootstrapped',
+  admin_role_changed: 'Admin role changed',
+  admin_removed: 'Admin removed',
   incident_created: 'Incident created',
   incident_published: 'Incident published',
   incident_closed: 'Incident closed',
   incident_updated: 'Incident updated',
-  report_submitted: 'Report submitted',
+  incident_archived: 'Incident archived',
+  report_created: 'Report created',
   report_status_changed: 'Status changed',
-  true_location_revealed: 'True location revealed',
+  report_edit_viewed: 'Report edit viewed',
+  report_deleted_by_owner: 'Report deleted by owner',
+  true_location_viewed: 'True location viewed',
 };
 
 export function AuditViewer() {

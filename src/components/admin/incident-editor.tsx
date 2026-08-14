@@ -273,32 +273,63 @@ export function IncidentEditor({ incidentId }: { incidentId: string }) {
       <section className="card">
         <h2>Display settings</h2>
         <p className="hint" style={{ marginBottom: '0.6rem' }}>
-          Advanced map display options stored as JSON. Leave empty for defaults.
+          Configure how the map looks for this incident.
         </p>
-        <label className="field">
-          Display settings JSON
-          <textarea
-            value={
-              incident.displaySettings && Object.keys(incident.displaySettings).length > 0
-                ? JSON.stringify(incident.displaySettings, null, 2)
-                : ''
-            }
-            onChange={(e) => {
-              const raw = e.target.value.trim();
-              if (!raw) {
-                updateField('displaySettings', {});
-                return;
-              }
-              try {
-                updateField('displaySettings', JSON.parse(raw));
-              } catch {
-                // ignore invalid JSON while typing
-              }
-            }}
-            rows={4}
-            placeholder='{}'
-          />
-        </label>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem' }}>
+          <label className="field">
+            Marker radius (px)
+            <input
+              type="number"
+              min={4}
+              max={30}
+              value={typeof (incident.displaySettings as Record<string, unknown>)?.pointRadius === 'number' ? (incident.displaySettings as Record<string, unknown>).pointRadius as number : 10}
+              onChange={(e) => {
+                const ds = { ...((incident.displaySettings ?? {}) as Record<string, unknown>), pointRadius: Number(e.target.value) || 10 };
+                updateField('displaySettings', ds);
+              }}
+            />
+          </label>
+          <label className="field">
+            Cluster radius (px)
+            <input
+              type="number"
+              min={20}
+              max={100}
+              value={typeof (incident.displaySettings as Record<string, unknown>)?.clusterRadius === 'number' ? (incident.displaySettings as Record<string, unknown>).clusterRadius as number : 45}
+              onChange={(e) => {
+                const ds = { ...((incident.displaySettings ?? {}) as Record<string, unknown>), clusterRadius: Number(e.target.value) || 45 };
+                updateField('displaySettings', ds);
+              }}
+            />
+          </label>
+          <label className="field">
+            Max cluster zoom
+            <input
+              type="number"
+              min={8}
+              max={18}
+              value={typeof (incident.displaySettings as Record<string, unknown>)?.clusterMaxZoom === 'number' ? (incident.displaySettings as Record<string, unknown>).clusterMaxZoom as number : 14}
+              onChange={(e) => {
+                const ds = { ...((incident.displaySettings ?? {}) as Record<string, unknown>), clusterMaxZoom: Number(e.target.value) || 14 };
+                updateField('displaySettings', ds);
+              }}
+            />
+          </label>
+          <label className="field">
+            <span>&nbsp;</span>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.4rem' }}>
+              <input
+                type="checkbox"
+                checked={(incident.displaySettings as Record<string, unknown>)?.showDescription !== false}
+                onChange={(e) => {
+                  const ds = { ...((incident.displaySettings ?? {}) as Record<string, unknown>), showDescription: e.target.checked };
+                  updateField('displaySettings', ds);
+                }}
+              />
+              Show description on map
+            </label>
+          </label>
+        </div>
       </section>
 
       <section className="card">

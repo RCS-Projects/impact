@@ -112,6 +112,12 @@ export function IncidentMapView(props: IncidentMapViewProps) {
     }
   }, [props.reference]);
 
+  const ds = props.displaySettings ?? {};
+  const dsPointRadius = typeof ds.pointRadius === 'number' ? ds.pointRadius : 10;
+  const dsClusterRadius = typeof ds.clusterRadius === 'number' ? ds.clusterRadius : 45;
+  const dsClusterMaxZoom = typeof ds.clusterMaxZoom === 'number' ? ds.clusterMaxZoom : 14;
+  const dsShowDescription = ds.showDescription !== false;
+
   useEffect(() => {
     if (!container.current || mapRef.current) return;
     const map = new maplibregl.Map({
@@ -128,8 +134,8 @@ export function IncidentMapView(props: IncidentMapViewProps) {
         type: 'geojson',
         data: { type: 'FeatureCollection', features: [] },
         cluster: true,
-        clusterMaxZoom: 14,
-        clusterRadius: 45,
+        clusterMaxZoom: dsClusterMaxZoom,
+        clusterRadius: dsClusterRadius,
       });
       map.addSource('privacy-circles', {
         type: 'geojson',
@@ -187,7 +193,7 @@ export function IncidentMapView(props: IncidentMapViewProps) {
         filter: ['!', ['has', 'point_count']],
         paint: {
           'circle-color': ['get', 'color'],
-          'circle-radius': 10,
+          'circle-radius': dsPointRadius,
           'circle-stroke-color': '#0d1215',
           'circle-stroke-width': 2,
         },
@@ -322,7 +328,7 @@ export function IncidentMapView(props: IncidentMapViewProps) {
       <header className="topbar">
         <div>
           <div className="topbar-title">{props.title}</div>
-          {props.description && <div className="hint topbar-desc">{props.description}</div>}
+          {dsShowDescription && props.description && <div className="hint topbar-desc">{props.description}</div>}
         </div>
         <span className={`chip ${props.incidentStatus === 'live' ? 'chip-live' : 'chip-closed'}`}>
           {props.incidentStatus === 'live' ? 'Receiving reports' : 'Closed to new reports'}

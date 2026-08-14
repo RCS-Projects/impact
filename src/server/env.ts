@@ -13,6 +13,7 @@ const schema = z.object({
   TURNSTILE_SITE_KEY: z.string().optional().or(z.literal('')),
   TURNSTILE_SECRET_KEY: z.string().optional().or(z.literal('')),
   DEVELOPMENT_TURNSTILE_BYPASS: z.enum(['true', 'false']).default('false'),
+  UPLOAD_DIR: z.string().optional(),
 });
 
 export type Env = z.infer<typeof schema>;

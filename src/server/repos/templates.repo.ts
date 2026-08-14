@@ -32,3 +32,7 @@ export function upsert(
       schema = EXCLUDED.schema, updated_at = now()
   `;
 }
+
+export function remove(db: postgres.Sql, key: string) {
+  return db`DELETE FROM schema_templates WHERE key = ${key}`;
+}

@@ -5,6 +5,7 @@ export const metadata: Metadata = {
   title: { default: 'Impact Maps', template: '%s · Impact Maps' },
   description:
     'Community crowdsourced incident maps. Reports are crowdsourced and may not be independently verified.',
+  icons: { icon: '/favicon.svg' },
 };
 
 export const viewport: Viewport = {

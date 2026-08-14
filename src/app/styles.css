@@ -158,6 +158,10 @@ a {
 .chip-closed {
   color: var(--text-dim);
 }
+.chip-archived {
+  color: var(--text-muted);
+  border-color: rgba(140, 140, 140, 0.4);
+}
 .chip-draft {
   color: var(--warn);
   border-color: rgba(245, 165, 36, 0.5);
@@ -329,12 +333,6 @@ a {
   cursor: pointer;
 }
 
-.report-list-toggle {
-  position: absolute;
-  left: 0.75rem;
-  top: 0.75rem;
-  z-index: 3;
-}
 
 .forms-grid {
   display: grid;
@@ -567,19 +565,6 @@ table.data tr:last-child td {
   border-radius: 50%;
   border: 2px solid #fff3;
   flex: none;
-}
-
-.cluster-badge {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background: rgba(245, 165, 36, 0.9);
-  color: #1a1204;
-  display: grid;
-  place-items: center;
-  font-weight: 700;
-  font-size: 0.8rem;
-  border: 2px solid #0d121588;
 }
 
 .grid-3 {

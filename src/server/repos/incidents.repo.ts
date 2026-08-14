@@ -28,6 +28,7 @@ export interface IncidentAdminRow {
   createdAt: string;
   publishedAt: string | null;
   closedAt: string | null;
+  archivedAt: string | null;
   updatedAt: string;
   reportCount: number;
   flaggedCount: number;
@@ -62,6 +63,7 @@ export function listForAdmin(db: postgres.Sql) {
     SELECT i.id, i.public_id AS "publicId", i.canonical_slug AS slug, i.title, i.description,
       i.status::text AS status, i.created_at::text AS "createdAt",
       i.published_at::text AS "publishedAt", i.closed_at::text AS "closedAt",
+      i.archived_at::text AS "archivedAt",
       i.updated_at::text AS "updatedAt",
       (SELECT count(*)::int FROM reports r WHERE r.incident_id = i.id) AS "reportCount",
       (SELECT count(*)::int FROM reports r WHERE r.incident_id = i.id AND r.status = 'flagged') AS "flaggedCount"
@@ -160,6 +162,7 @@ export function archive(db: postgres.Sql, id: string) {
 
 export interface IncidentDetailRow extends IncidentPublicRow {
   closedAt: string | null;
+  archivedAt: string | null;
   createdAt: string;
 }
 
@@ -169,6 +172,7 @@ export function findByIdForAdmin(db: postgres.Sql, id: string) {
       i.status::text AS status, i.published_at::text AS "publishedAt",
       i.created_at::text AS "createdAt",
       i.closed_at::text AS "closedAt",
+      i.archived_at::text AS "archivedAt",
       i.updated_at::text AS "updatedAt",
       ST_X(i.initial_center::geometry) AS longitude, ST_Y(i.initial_center::geometry) AS latitude,
       i.initial_zoom::float AS zoom,

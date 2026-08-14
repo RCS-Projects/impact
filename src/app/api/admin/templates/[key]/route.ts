@@ -72,3 +72,14 @@ export const PATCH = handleApi(
     return NextResponse.json({ ok: true }, { headers: noStore() });
   },
 );
+
+export const DELETE = handleApi(
+  async (_request: NextRequest, { params }: { params: { key: string } }) => {
+    await requireAdminMutation(_request);
+    const db = getSql();
+    const existing = await templatesRepo.findByKey(db, params.key);
+    if (!existing) throw AppError.notFound('Template not found');
+    await templatesRepo.remove(db, params.key);
+    return NextResponse.json({ ok: true }, { headers: noStore() });
+  },
+);

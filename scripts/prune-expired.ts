@@ -1,4 +1,6 @@
 import postgres from 'postgres';
+import { readdir, unlink } from 'fs/promises';
+import { join } from 'path';
 
 async function main() {
   const databaseUrl = process.env.DATABASE_URL;
@@ -15,6 +17,25 @@ async function main() {
       RETURNING id
     `;
     console.log(`Pruned ${result.length} expired report(s)`);
+
+    // Clean orphaned upload files (uploads with no matching report)
+    const orphaned = await db<{ filename: string }[]>`
+      DELETE FROM uploads
+      WHERE report_id IS NULL
+        AND created_at < now() - interval '1 hour'
+      RETURNING filename
+    `;
+    if (orphaned.length > 0) {
+      const uploadDir = process.env.UPLOAD_DIR ?? join(process.cwd(), 'data', 'uploads');
+      for (const { filename } of orphaned) {
+        try {
+          await unlink(join(uploadDir, filename));
+        } catch {
+          // file may already be deleted
+        }
+      }
+      console.log(`Cleaned ${orphaned.length} orphaned upload file(s)`);
+    }
   } catch (error) {
     console.error('Prune failed:', error);
     process.exit(1);

@@ -129,9 +129,28 @@ export function TemplateList() {
                     <td>{t.title}</td>
                     <td>{fieldCount} field{fieldCount !== 1 ? 's' : ''}</td>
                     <td>
-                      <a className="button button-secondary button-sm" href={`/admin/templates/${t.key}`}>
-                        Edit
-                      </a>
+                      <div style={{ display: 'flex', gap: '0.4rem' }}>
+                        <a className="button button-secondary button-sm" href={`/admin/templates/${t.key}`}>
+                          Edit
+                        </a>
+                        <button
+                          type="button"
+                          className="button button-danger button-sm"
+                          onClick={async () => {
+                            if (!confirm(`Delete template "${t.title}"?`)) return;
+                            const res = await fetch(`/api/admin/templates/${t.key}`, {
+                              method: 'DELETE',
+                              headers: { 'x-csrf-token': getCsrfToken() },
+                            });
+                            if (res.ok) {
+                              setMessage(`Template "${t.key}" deleted`);
+                              void load();
+                            }
+                          }}
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );

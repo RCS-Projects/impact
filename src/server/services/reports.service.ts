@@ -238,8 +238,10 @@ export async function updateReport(reportId: string, token: string, input: Updat
   log('report_updated', { reportId, privacy: input.privacy, movedMeters: Math.round(movedMeters) });
 }
 
-export async function deleteReport(reportId: string, editToken: string) {
+export async function deleteReport(reportId: string, editToken: string, ip: string) {
   const db = getSql();
+  const ipHash = hmacIp(ip);
+  await rateLimit.enforce('report_delete', ipHash, 5, 3_600);
   const row = await reportsPrivateRepo.getForEdit(db, reportId);
   if (!row) throw AppError.notFound('Report not found');
   if (!(await verifyEditToken(editToken, row.editTokenHash)))

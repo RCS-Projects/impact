@@ -62,10 +62,17 @@ database is reachable.
 
 ## Milestone status
 
-Milestone 1 (this tree): foundation, admin auth, preset templates, incident creation,
+Milestone 1: foundation, admin auth, preset templates, incident creation,
 permanent URLs, public map with clustering/filters/counts, report submission with exact and
 approximate locations, Nominatim proxy, spam protection, private report editing, basic
 moderation, Docker deployment, tests.
 
-Planned next: visual form builder, template manager, polygon drawing editor, photo uploads
-with metadata stripping, report expiry, exports, live updates, integrations.
+Milestone 2: incident editor, PATCH API, polygon drawing editor, visual form builder,
+template manager, report expiry with prune script, audit viewer.
+
+Milestone 3: admin management (roles: admin/moderator), moderation pagination + batch ops,
+photo uploads with EXIF stripping, CSV/JSON data exports, SSE real-time updates replacing
+30s polling, display settings (marker size, cluster radius, description toggle),
+archived status, favicon + robots.txt.
+
+Remaining: integrations, advanced analytics, bulk import/export.
