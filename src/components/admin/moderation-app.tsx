@@ -44,23 +44,29 @@ export function ModerationApp() {
   const [incidentId, setIncidentId] = useState('');
   const [status, setStatus] = useState('flagged');
   const [error, setError] = useState('');
-  const [trueLocations, setTrueLocations] = useState<
-    Record<string, { latitude: number; longitude: number; submittedPlaceLabel: string | null }>
-  >({});
+  const [page, setPage] = useState(0);
+  const [total, setTotal] = useState(0);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [note, setNote] = useState('');
+  const limit = 25;
 
   const load = useCallback(async () => {
     const params = new URLSearchParams();
     if (incidentId) params.set('incidentId', incidentId);
     if (status) params.set('status', status);
+    params.set('page', String(page));
+    params.set('limit', String(limit));
     const response = await fetch(`/api/admin/reports?${params}`);
     if (!response.ok) {
       setError('Could not load the moderation queue');
       return;
     }
-    const data = (await response.json()) as { reports: QueueReport[] };
+    const data = (await response.json()) as { reports: QueueReport[]; total: number };
     setReports(data.reports);
+    setTotal(data.total);
     setError('');
-  }, [incidentId, status]);
+    setSelected(new Set());
+  }, [incidentId, status, page]);
 
   useEffect(() => {
     void load();
@@ -79,27 +85,51 @@ export function ModerationApp() {
     const response = await fetch(`/api/admin/reports/${reportId}/status`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-csrf-token': getCsrfToken() },
-      body: JSON.stringify({ action }),
+      body: JSON.stringify({ action, note: note || undefined }),
     });
     if (!response.ok) {
       const data = (await response.json().catch(() => ({}))) as { error?: string };
       setError(data.error ?? 'Action failed');
       return;
     }
+    setNote('');
     void load();
   }
 
-  async function revealTrueLocation(reportId: string) {
-    const response = await fetch(`/api/admin/reports/${reportId}/true-location`);
+  async function batchAct(action: string) {
+    if (selected.size === 0) return;
+    const response = await fetch('/api/admin/reports/batch-status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-csrf-token': getCsrfToken() },
+      body: JSON.stringify({ reportIds: [...selected], action, note: note || undefined }),
+    });
     if (!response.ok) {
-      setError('Could not load the true location');
+      const data = (await response.json().catch(() => ({}))) as { error?: string };
+      setError(data.error ?? 'Batch action failed');
       return;
     }
-    const data = (await response.json()) as {
-      location: { latitude: number; longitude: number; submittedPlaceLabel: string | null };
-    };
-    setTrueLocations((previous) => ({ ...previous, [reportId]: data.location }));
+    setNote('');
+    void load();
   }
+
+  function toggleSelect(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    if (selected.size === reports.length) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(reports.map((r) => r.id)));
+    }
+  }
+
+  const totalPages = Math.ceil(total / limit);
 
   return (
     <main className="shell" style={{ maxWidth: 1100 }}>
@@ -114,10 +144,10 @@ export function ModerationApp() {
       </div>
 
       <div className="card">
-        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
           <label className="field" style={{ minWidth: 220 }}>
             Incident
-            <select value={incidentId} onChange={(event) => setIncidentId(event.target.value)}>
+            <select value={incidentId} onChange={(event) => { setIncidentId(event.target.value); setPage(0); }}>
               <option value="">All incidents</option>
               {incidents.map((incident) => (
                 <option key={incident.id} value={incident.id}>
@@ -128,7 +158,7 @@ export function ModerationApp() {
           </label>
           <label className="field" style={{ minWidth: 200 }}>
             Status
-            <select value={status} onChange={(event) => setStatus(event.target.value)}>
+            <select value={status} onChange={(event) => { setStatus(event.target.value); setPage(0); }}>
               <option value="">All statuses</option>
               <option value="flagged">Flagged</option>
               <option value="unverified">Unverified</option>
@@ -138,8 +168,33 @@ export function ModerationApp() {
               <option value="removed">Removed</option>
             </select>
           </label>
+          <label className="field" style={{ flex: 1, minWidth: 200 }}>
+            Note (optional)
+            <input
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="Add a note to this action..."
+              maxLength={500}
+            />
+          </label>
         </div>
       </div>
+
+      {selected.size > 0 && (
+        <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <span className="hint">{selected.size} selected</span>
+          {ACTIONS.map((action) => (
+            <button
+              key={action.action}
+              type="button"
+              className={`button button-sm ${action.className ?? 'button-secondary'}`}
+              onClick={() => void batchAct(action.action)}
+            >
+              Batch {action.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {error && <p className="notice notice-error">{error}</p>}
 
@@ -147,85 +202,79 @@ export function ModerationApp() {
         <table className="data">
           <thead>
             <tr>
+              <th style={{ width: 40 }}>
+                <input
+                  type="checkbox"
+                  checked={selected.size === reports.length && reports.length > 0}
+                  onChange={toggleSelectAll}
+                />
+              </th>
               <th>Report</th>
               <th>Incident</th>
               <th>Status</th>
               <th>Signals</th>
               <th>Answers</th>
-              <th>True location</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {reports.map((report) => {
-              const revealed = trueLocations[report.id];
-              return (
-                <tr key={report.id}>
-                  <td>
-                    {report.placeLabel ?? 'No label'}
-                    <br />
-                    <span className="hint">
-                      {formatRelativeTime(report.createdAt)} · {report.privacy}
-                    </span>
-                  </td>
-                  <td>{report.incidentTitle}</td>
-                  <td>
-                    <span className={`chip chip-${report.status}`}>
-                      {STATUS_LABELS[report.status]}
-                    </span>
-                  </td>
-                  <td>
-                    {report.suspiciousReasons.length === 0 ? (
-                      <span className="hint">none</span>
-                    ) : (
-                      report.suspiciousReasons.map((reason) => (
-                        <span key={reason} className="chip chip-flagged" style={{ margin: 2 }}>
-                          {REASON_LABELS[reason] ?? reason}
-                        </span>
-                      ))
-                    )}
-                  </td>
-                  <td style={{ maxWidth: 280 }}>
-                    {Object.entries(report.answers).map(([key, value]) => (
-                      <div key={key}>
-                        <span className="hint">{key.replaceAll('_', ' ')}:</span>{' '}
-                        {Array.isArray(value) ? value.join(', ') : String(value)}
-                      </div>
-                    ))}
-                  </td>
-                  <td>
-                    {revealed ? (
-                      <span className="hint">
-                        {revealed.latitude.toFixed(5)}, {revealed.longitude.toFixed(5)}
-                        {revealed.submittedPlaceLabel ? ` (${revealed.submittedPlaceLabel})` : ''}
+            {reports.map((report) => (
+              <tr key={report.id}>
+                <td>
+                  <input
+                    type="checkbox"
+                    checked={selected.has(report.id)}
+                    onChange={() => toggleSelect(report.id)}
+                  />
+                </td>
+                <td>
+                  {report.placeLabel ?? 'No label'}
+                  <br />
+                  <span className="hint">
+                    {formatRelativeTime(report.createdAt)} · {report.privacy}
+                  </span>
+                </td>
+                <td>{report.incidentTitle}</td>
+                <td>
+                  <span className={`chip chip-${report.status}`}>
+                    {STATUS_LABELS[report.status]}
+                  </span>
+                </td>
+                <td>
+                  {report.suspiciousReasons.length === 0 ? (
+                    <span className="hint">none</span>
+                  ) : (
+                    report.suspiciousReasons.map((reason) => (
+                      <span key={reason} className="chip chip-flagged" style={{ margin: 2 }}>
+                        {REASON_LABELS[reason] ?? reason}
                       </span>
-                    ) : (
-                      <button
-                        type="button"
-                        className="button button-secondary button-sm"
-                        onClick={() => revealTrueLocation(report.id)}
-                      >
-                        Reveal (audited)
-                      </button>
-                    )}
-                  </td>
-                  <td>
-                    <div className="buttons" style={{ marginTop: 0 }}>
-                      {ACTIONS.map((action) => (
-                        <button
-                          key={action.action}
-                          type="button"
-                          className={`button button-sm ${action.className ?? 'button-secondary'}`}
-                          onClick={() => act(report.id, action.action)}
-                        >
-                          {action.label}
-                        </button>
-                      ))}
+                    ))
+                  )}
+                </td>
+                <td style={{ maxWidth: 280 }}>
+                  {Object.entries(report.answers).map(([key, value]) => (
+                    <div key={key}>
+                      <span className="hint">{key.replaceAll('_', ' ')}:</span>{' '}
+                      {Array.isArray(value) ? value.join(', ') : String(value)}
                     </div>
-                  </td>
-                </tr>
-              );
-            })}
+                  ))}
+                </td>
+                <td>
+                  <div className="buttons" style={{ marginTop: 0 }}>
+                    {ACTIONS.map((action) => (
+                      <button
+                        key={action.action}
+                        type="button"
+                        className={`button button-sm ${action.className ?? 'button-secondary'}`}
+                        onClick={() => act(report.id, action.action)}
+                      >
+                        {action.label}
+                      </button>
+                    ))}
+                  </div>
+                </td>
+              </tr>
+            ))}
             {reports.length === 0 && (
               <tr>
                 <td colSpan={7} className="hint">
@@ -236,6 +285,30 @@ export function ModerationApp() {
           </tbody>
         </table>
       </div>
+
+      {totalPages > 1 && (
+        <div className="buttons" style={{ marginTop: '0.6rem', justifyContent: 'center' }}>
+          <button
+            type="button"
+            className="button button-secondary button-sm"
+            disabled={page === 0}
+            onClick={() => setPage(page - 1)}
+          >
+            Previous
+          </button>
+          <span className="hint" style={{ fontSize: '0.82rem' }}>
+            Page {page + 1} of {totalPages} ({total} total)
+          </span>
+          <button
+            type="button"
+            className="button button-secondary button-sm"
+            disabled={page >= totalPages - 1}
+            onClick={() => setPage(page + 1)}
+          >
+            Next
+          </button>
+        </div>
+      )}
     </main>
   );
 }

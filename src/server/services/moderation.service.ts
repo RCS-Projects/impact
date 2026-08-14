@@ -16,13 +16,25 @@ const ACTION_TO_STATUS: Record<string, ReportStatus> = {
 };
 
 export function listQueue(
-  options: { incidentId?: string; statuses?: ReportStatus[]; limit?: number },
+  options: { incidentId?: string; statuses?: ReportStatus[]; limit?: number; offset?: number },
   _admin: AdminSession,
 ) {
   return moderationRepo.listQueue(getSql(), options);
 }
 
-export async function applyAction(reportId: string, action: string, admin: AdminSession) {
+export function countQueue(
+  options: { incidentId?: string; statuses?: ReportStatus[] },
+  _admin: AdminSession,
+) {
+  return moderationRepo.countQueue(getSql(), options);
+}
+
+export async function applyAction(
+  reportId: string,
+  action: string,
+  admin: AdminSession,
+  note?: string,
+) {
   const status = ACTION_TO_STATUS[action];
   if (!status) throw AppError.badRequest('Unknown moderation action');
   const db = getSql();
@@ -34,8 +46,32 @@ export async function applyAction(reportId: string, action: string, admin: Admin
     actorType: 'admin',
     actorId: admin.id,
     eventType: 'report_status_changed',
-    metadata: { status },
+    metadata: { status, ...(note ? { note } : {}) },
   });
+}
+
+export async function batchApplyAction(
+  reportIds: string[],
+  action: string,
+  admin: AdminSession,
+  note?: string,
+) {
+  const status = ACTION_TO_STATUS[action];
+  if (!status) throw AppError.badRequest('Unknown moderation action');
+  if (reportIds.length === 0) throw AppError.badRequest('No reports selected');
+  const db = getSql();
+  const updated = await moderationRepo.batchSetStatus(db, reportIds, status);
+  for (const row of updated) {
+    await auditRepo.record(db, {
+      incidentId: row.incidentId,
+      reportId: row.id,
+      actorType: 'admin',
+      actorId: admin.id,
+      eventType: 'report_status_changed',
+      metadata: { status, batch: true, ...(note ? { note } : {}) },
+    });
+  }
+  return { updated: updated.length };
 }
 
 export async function getTrueLocation(reportId: string, admin: AdminSession) {

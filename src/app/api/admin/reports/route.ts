@@ -3,7 +3,7 @@ import type { ReportStatus } from '@/shared/types';
 import { handleApi } from '@/server/errors';
 import { noStore } from '@/server/http';
 import { requireAdmin } from '@/server/services/auth.service';
-import { listQueue } from '@/server/services/moderation.service';
+import { listQueue, countQueue } from '@/server/services/moderation.service';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,6 +23,12 @@ export const GET = handleApi(async (request: NextRequest) => {
   const statuses = statusParam
     ? (statusParam.split(',').filter((s) => VALID_STATUSES.has(s)) as ReportStatus[])
     : undefined;
-  const reports = await listQueue({ incidentId, statuses }, admin);
-  return NextResponse.json({ reports }, { headers: noStore() });
+  const page = Math.max(0, Number(request.nextUrl.searchParams.get('page') ?? 0));
+  const limit = Math.min(Math.max(1, Number(request.nextUrl.searchParams.get('limit') ?? 25)), 100);
+  const offset = page * limit;
+  const [reports, total] = await Promise.all([
+    listQueue({ incidentId, statuses, limit, offset }, admin),
+    countQueue({ incidentId, statuses }, admin),
+  ]);
+  return NextResponse.json({ reports, total, page, limit }, { headers: noStore() });
 });

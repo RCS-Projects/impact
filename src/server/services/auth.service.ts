@@ -96,6 +96,12 @@ export async function requireAdminMutation(request: NextRequest): Promise<AdminS
   return admin;
 }
 
+export async function requireAdminRole(request: NextRequest): Promise<AdminSession> {
+  const admin = await requireAdminMutation(request);
+  if (admin.role !== 'admin') throw AppError.forbidden('Administrators only');
+  return admin;
+}
+
 export async function setupAdministrator(email: string, password: string, secret: string) {
   const env = getEnv();
   if (!env.ADMIN_BOOTSTRAP_SECRET || !env.ADMIN_BOOTSTRAP_EMAIL)

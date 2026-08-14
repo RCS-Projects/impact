@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { handleApi } from '@/server/errors';
 import { noStore } from '@/server/http';
-import { requireAdmin, requireAdminMutation } from '@/server/services/auth.service';
+import { requireAdmin, requireAdminRole } from '@/server/services/auth.service';
 import { getById, update } from '@/server/services/incidents.service';
 import { incidentFormSchema } from '@/server/schema/form-schema';
 
@@ -63,7 +63,7 @@ export const GET = handleApi(
 
 export const PATCH = handleApi(
   async (request: NextRequest, { params }: { params: { id: string } }) => {
-    const admin = await requireAdminMutation(request);
+    const admin = await requireAdminRole(request);
     const raw = await request.json().catch(() => null);
     const data = updateInput.parse(raw);
     if (data.formSchema) {

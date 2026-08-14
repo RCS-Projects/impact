@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { handleApi } from '@/server/errors';
 import { noStore } from '@/server/http';
-import { requireAdmin, requireAdminMutation } from '@/server/services/auth.service';
+import { requireAdmin, requireAdminRole } from '@/server/services/auth.service';
 import { createDraft, listForAdmin } from '@/server/services/incidents.service';
 
 export const dynamic = 'force-dynamic';
@@ -27,7 +27,7 @@ export const GET = handleApi(async () => {
 });
 
 export const POST = handleApi(async (request: NextRequest) => {
-  const admin = await requireAdminMutation(request);
+  const admin = await requireAdminRole(request);
   const data = createInput.parse(await request.json().catch(() => null));
   const created = await createDraft(data, admin);
   return NextResponse.json(created, { status: 201, headers: noStore() });

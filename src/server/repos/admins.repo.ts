@@ -7,6 +7,14 @@ export interface AdministratorRow {
   passwordHash: string;
 }
 
+export interface AdminListRow {
+  id: string;
+  email: string;
+  role: string;
+  createdAt: string;
+  lastLoginAt: string | null;
+}
+
 export function findByEmail(db: postgres.Sql, email: string) {
   return db<AdministratorRow[]>`
     SELECT id, email, role, password_hash AS "passwordHash"
@@ -30,6 +38,23 @@ export function count(db: postgres.Sql) {
   );
 }
 
+export function listAll(db: postgres.Sql) {
+  return db<AdminListRow[]>`
+    SELECT id, email, role, created_at::text AS "createdAt",
+      last_login_at::text AS "lastLoginAt"
+    FROM administrators
+    ORDER BY created_at
+  `;
+}
+
+export function findById(db: postgres.Sql, id: string) {
+  return db<AdminListRow[]>`
+    SELECT id, email, role, created_at::text AS "createdAt",
+      last_login_at::text AS "lastLoginAt"
+    FROM administrators WHERE id = ${id} LIMIT 1
+  `.then((rows) => rows[0] ?? null);
+}
+
 export function create(
   db: postgres.Sql,
   admin: { email: string; passwordHash: string; role: 'admin' | 'moderator' },
@@ -39,6 +64,20 @@ export function create(
     VALUES (${admin.email}, ${admin.passwordHash}, ${admin.role})
     RETURNING id
   `.then((rows) => rows[0]?.id);
+}
+
+export function updateRole(db: postgres.Sql, id: string, role: 'admin' | 'moderator') {
+  return db<{ id: string }[]>`
+    UPDATE administrators SET role = ${role} WHERE id = ${id}
+    RETURNING id
+  `.then((rows) => rows.length > 0);
+}
+
+export function remove(db: postgres.Sql, id: string) {
+  return db<{ id: string }[]>`
+    DELETE FROM administrators WHERE id = ${id}
+    RETURNING id
+  `.then((rows) => rows.length > 0);
 }
 
 export function touchLogin(db: postgres.Sql, id: string) {

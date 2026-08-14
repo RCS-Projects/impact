@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { handleApi } from '@/server/errors';
 import { getSql } from '@/server/db/client';
 import { noStore } from '@/server/http';
-import { requireAdmin, requireAdminMutation } from '@/server/services/auth.service';
+import { requireAdmin, requireAdminRole } from '@/server/services/auth.service';
 import * as templatesRepo from '@/server/repos/templates.repo';
 import { incidentFormSchema } from '@/server/schema/form-schema';
 
@@ -51,7 +51,7 @@ export const GET = handleApi(async () => {
 });
 
 export const POST = handleApi(async (request: NextRequest) => {
-  const admin = await requireAdminMutation(request);
+  const admin = await requireAdminRole(request);
   const data = createInput.parse(await request.json().catch(() => null));
   const db = getSql();
   const parsed = incidentFormSchema.parse(data.schema);
