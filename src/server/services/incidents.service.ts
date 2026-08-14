@@ -113,6 +113,18 @@ export async function close(incidentId: string, admin: AdminSession) {
   });
 }
 
+export async function archive(incidentId: string, admin: AdminSession) {
+  const db = getSql();
+  const archived = await incidentsRepo.archive(db, incidentId);
+  if (!archived) throw AppError.conflict('Only closed incidents can be archived');
+  await auditRepo.record(db, {
+    incidentId,
+    actorType: 'admin',
+    actorId: admin.id,
+    eventType: 'incident_archived',
+  });
+}
+
 export async function getById(incidentId: string) {
   const db = getSql();
   const row = await incidentsRepo.findByIdForAdmin(db, incidentId);
@@ -204,6 +216,10 @@ export function listForAdmin() {
 
 export function listPublicLive() {
   return incidentsRepo.listPublicLive(getSql());
+}
+
+export function listPublicAll() {
+  return incidentsRepo.listPublicAll(getSql());
 }
 
 export { PUBLIC_ID_PATTERN };

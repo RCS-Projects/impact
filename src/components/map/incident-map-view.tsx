@@ -42,6 +42,7 @@ export interface IncidentMapViewProps {
   fields: FieldView[];
   filters: FilterDefinition[];
   colorFieldKey: string | null;
+  displaySettings?: Record<string, unknown>;
 }
 
 export function IncidentMapView(props: IncidentMapViewProps) {

@@ -17,6 +17,15 @@ export const STATUS_LABELS: Record<ReportStatus, string> = {
   removed: 'Removed',
 };
 
+export type IncidentStatus = 'draft' | 'live' | 'closed' | 'archived';
+
+export const INCIDENT_STATUS_LABELS: Record<IncidentStatus, string> = {
+  draft: 'Draft',
+  live: 'Live',
+  closed: 'Closed',
+  archived: 'Archived',
+};
+
 export interface PublicReport {
   id: string;
   answers: Record<string, unknown>;
@@ -29,29 +38,11 @@ export interface PublicReport {
   createdAt: string;
 }
 
-export interface PublicIncidentView {
-  reference: string;
-  title: string;
-  description: string | null;
-  status: 'live' | 'closed';
-  longitude: number;
-  latitude: number;
-  zoom: number;
-  reportingArea: unknown | null;
-  formSchema: unknown;
-  publishedAt: string | null;
-}
-
 export interface GeocodeResult {
   label: string;
   latitude: number;
   longitude: number;
   placeLabel?: string;
-}
-
-export interface ReportFilters {
-  statuses: ReportStatus[];
-  fieldFilters: Record<string, string[]>;
 }
 
 export interface FieldView {

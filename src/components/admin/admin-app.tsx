@@ -15,6 +15,11 @@ interface AdminIncident {
   flaggedCount: number;
 }
 
+interface TemplateOption {
+  key: string;
+  title: string;
+}
+
 async function adminApi(path: string, body: unknown) {
   return fetch(path, {
     method: 'POST',
@@ -26,6 +31,7 @@ async function adminApi(path: string, body: unknown) {
 export function AdminApp({ signedIn }: { signedIn: boolean }) {
   const [message, setMessage] = useState('');
   const [incidents, setIncidents] = useState<AdminIncident[]>([]);
+  const [templates, setTemplates] = useState<TemplateOption[]>([]);
   const [reportingArea, setReportingArea] = useState<unknown | null>(null);
 
   const refresh = useCallback(async () => {
@@ -35,9 +41,19 @@ export function AdminApp({ signedIn }: { signedIn: boolean }) {
     setIncidents(data.incidents);
   }, []);
 
+  const loadTemplates = useCallback(async () => {
+    const response = await fetch('/api/admin/templates');
+    if (!response.ok) return;
+    const data = (await response.json()) as { templates: TemplateOption[] };
+    setTemplates(data.templates);
+  }, []);
+
   useEffect(() => {
-    if (signedIn) void refresh();
-  }, [signedIn, refresh]);
+    if (signedIn) {
+      void refresh();
+      void loadTemplates();
+    }
+  }, [signedIn, refresh, loadTemplates]);
 
   async function login(form: FormData) {
     setMessage('');
@@ -74,6 +90,7 @@ export function AdminApp({ signedIn }: { signedIn: boolean }) {
         zoom: Number(form.get('zoom')),
       },
       reportingArea,
+      reportExpiryDays: form.get('reportExpiryDays') ? Number(form.get('reportExpiryDays')) : undefined,
     });
     const data = (await response.json().catch(() => ({}))) as {
       error?: string;
@@ -89,7 +106,7 @@ export function AdminApp({ signedIn }: { signedIn: boolean }) {
     void refresh();
   }
 
-  async function act(incidentId: string, action: 'publish' | 'close') {
+  async function act(incidentId: string, action: 'publish' | 'close' | 'archive') {
     setMessage('');
     const response = await adminApi(`/api/admin/incidents/${incidentId}/${action}`, {});
     if (!response.ok) {
@@ -159,10 +176,21 @@ export function AdminApp({ signedIn }: { signedIn: boolean }) {
           </label>
           <label className="field">
             Template
-            <select name="templateKey" defaultValue="storm-damage">
-              <option value="storm-damage">Storm Damage</option>
-              <option value="cellular-outage">Cellular Outage</option>
+            <select name="templateKey" defaultValue={templates[0]?.key ?? 'storm-damage'}>
+              {templates.map((t) => (
+                <option key={t.key} value={t.key}>{t.title}</option>
+              ))}
+              {templates.length === 0 && (
+                <>
+                  <option value="storm-damage">Storm Damage</option>
+                  <option value="cellular-outage">Cellular Outage</option>
+                </>
+              )}
             </select>
+          </label>
+          <label className="field">
+            Report expiry (days)
+            <input name="reportExpiryDays" type="number" min={1} max={365} placeholder="No expiry" />
           </label>
           <div className="grid-3">
             <label className="field">
@@ -275,6 +303,15 @@ export function AdminApp({ signedIn }: { signedIn: boolean }) {
                             onClick={() => act(incident.id, 'close')}
                           >
                             Close
+                          </button>
+                        )}
+                        {incident.status === 'closed' && (
+                          <button
+                            type="button"
+                            className="button button-secondary button-sm"
+                            onClick={() => act(incident.id, 'archive')}
+                          >
+                            Archive
                           </button>
                         )}
                       </div>

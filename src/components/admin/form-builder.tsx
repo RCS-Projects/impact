@@ -244,6 +244,15 @@ export function FormBuilder({
                   >
                     + Add choice
                   </button>
+                  {field.choices && field.choices.length > 1 && (() => {
+                    const dupes = field.choices.filter((c, i, arr) => arr.findIndex((x) => x.value === c.value) !== i);
+                    if (dupes.length === 0) return null;
+                    return (
+                      <p className="notice notice-warn" style={{ marginTop: '0.3rem', fontSize: '0.8rem' }}>
+                        Duplicate values: {dupes.map((d) => d.value).join(', ')}
+                      </p>
+                    );
+                  })()}
                 </div>
               )}
 

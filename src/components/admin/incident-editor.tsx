@@ -77,6 +77,7 @@ export function IncidentEditor({ incidentId }: { incidentId: string }) {
       reportingArea: incident.reportingArea,
       reportExpiryDays: incident.reportExpiryDays,
       formSchema: incident.formSchema,
+      displaySettings: incident.displaySettings,
     };
     const res = await adminApi(`/api/admin/incidents/${incidentId}`, 'PATCH', body);
     const data = (await res.json().catch(() => ({}))) as { error?: string; changedFields?: string[] };
@@ -90,7 +91,7 @@ export function IncidentEditor({ incidentId }: { incidentId: string }) {
     void load();
   }
 
-  async function act(action: 'publish' | 'close') {
+  async function act(action: 'publish' | 'close' | 'archive') {
     setMessage('');
     const res = await adminApi(`/api/admin/incidents/${incidentId}/${action}`, 'POST', {});
     if (!res.ok) {
@@ -108,6 +109,7 @@ export function IncidentEditor({ incidentId }: { incidentId: string }) {
   const publicUrl = `/map/${incident.slug}-${incident.publicId}`;
   const canPublish = incident.status === 'draft';
   const canClose = incident.status === 'live';
+  const canArchive = incident.status === 'closed';
 
   return (
     <main className="shell">
@@ -134,6 +136,11 @@ export function IncidentEditor({ incidentId }: { incidentId: string }) {
           {canClose && (
             <button type="button" className="button button-secondary button-sm" onClick={() => act('close')}>
               Close
+            </button>
+          )}
+          {canArchive && (
+            <button type="button" className="button button-secondary button-sm" onClick={() => act('archive')}>
+              Archive
             </button>
           )}
           <button type="button" className="button button-secondary button-sm" onClick={() => router.push('/admin')}>
@@ -261,6 +268,37 @@ export function IncidentEditor({ incidentId }: { incidentId: string }) {
             updateField('formSchema', { version: 1, fields })
           }
         />
+      </section>
+
+      <section className="card">
+        <h2>Display settings</h2>
+        <p className="hint" style={{ marginBottom: '0.6rem' }}>
+          Advanced map display options stored as JSON. Leave empty for defaults.
+        </p>
+        <label className="field">
+          Display settings JSON
+          <textarea
+            value={
+              incident.displaySettings && Object.keys(incident.displaySettings).length > 0
+                ? JSON.stringify(incident.displaySettings, null, 2)
+                : ''
+            }
+            onChange={(e) => {
+              const raw = e.target.value.trim();
+              if (!raw) {
+                updateField('displaySettings', {});
+                return;
+              }
+              try {
+                updateField('displaySettings', JSON.parse(raw));
+              } catch {
+                // ignore invalid JSON while typing
+              }
+            }}
+            rows={4}
+            placeholder='{}'
+          />
+        </label>
       </section>
 
       <section className="card">

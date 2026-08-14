@@ -35,6 +35,7 @@ export default async function IncidentMapPage({ params }: PageProps) {
       fields={schema.fields as FieldView[]}
       filters={filters}
       colorFieldKey={colorField?.key ?? null}
+      displaySettings={(incident.displaySettings as Record<string, unknown>) ?? {}}
     />
   );
 }

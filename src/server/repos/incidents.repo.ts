@@ -84,6 +84,28 @@ export function listPublicLive(db: postgres.Sql) {
   `;
 }
 
+export function listPublicAll(db: postgres.Sql) {
+  return db<
+    {
+      reference: string;
+      title: string;
+      description: string | null;
+      status: string;
+      publishedAt: string | null;
+      reportCount: number;
+    }[]
+  >`
+    SELECT canonical_slug || '-' || public_id AS reference, title, description,
+      status::text AS status, published_at::text AS "publishedAt",
+      (SELECT count(*)::int FROM reports r WHERE r.incident_id = i.id
+        AND r.status IN ('unverified', 'verified', 'resolved')) AS "reportCount"
+    FROM incidents i
+    WHERE status IN ('live', 'closed')
+    ORDER BY status = 'live' DESC, published_at DESC
+    LIMIT 50
+  `;
+}
+
 export function create(
   db: postgres.Sql,
   incident: {
@@ -124,6 +146,14 @@ export function close(db: postgres.Sql, id: string) {
   return db<{ id: string }[]>`
     UPDATE incidents SET status = 'closed', closed_at = now(), updated_at = now()
     WHERE id = ${id} AND status = 'live'
+    RETURNING id
+  `.then((rows) => rows.length > 0);
+}
+
+export function archive(db: postgres.Sql, id: string) {
+  return db<{ id: string }[]>`
+    UPDATE incidents SET status = 'archived', archived_at = now(), updated_at = now()
+    WHERE id = ${id} AND status = 'closed'
     RETURNING id
   `.then((rows) => rows.length > 0);
 }
