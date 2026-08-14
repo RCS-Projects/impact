@@ -120,7 +120,7 @@ export async function createReport(
   });
 
   try {
-    const { broadcastToIncident } = await import('@/app/api/incidents/[reference]/events/route');
+    const { broadcastToIncident } = await import('@/server/sse-bus');
     broadcastToIncident(input.reference, 'report_created', JSON.stringify({ reportId, status }));
   } catch {
     // SSE module may not be loadable server-side in all contexts

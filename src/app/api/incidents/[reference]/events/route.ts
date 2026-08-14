@@ -1,17 +1,8 @@
 import { NextRequest } from 'next/server';
 import { getPublicIncident } from '@/server/services/incidents.service';
+import { addListener, removeListener } from '@/server/sse-bus';
 
 export const dynamic = 'force-dynamic';
-
-type Listener = (event: string, data: string) => void;
-
-const listeners = new Map<string, Set<Listener>>();
-
-export function broadcastToIncident(reference: string, event: string, data: string) {
-  const set = listeners.get(reference);
-  if (!set) return;
-  for (const fn of set) fn(event, data);
-}
 
 export const GET = async (
   _request: NextRequest,
@@ -36,15 +27,10 @@ export const GET = async (
       };
 
       const cleanup = () => {
-        const set = listeners.get(reference);
-        if (set) {
-          set.delete(send);
-          if (set.size === 0) listeners.delete(reference);
-        }
+        removeListener(reference, send);
       };
 
-      if (!listeners.has(reference)) listeners.set(reference, new Set());
-      listeners.get(reference)!.add(send);
+      addListener(reference, send);
 
       send('connected', JSON.stringify({ reference, title: incident.title }));
 
