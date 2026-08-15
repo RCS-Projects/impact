@@ -17,8 +17,6 @@ test.describe('public reporting loop', () => {
     await page.fill('input[name="login"]', ADMIN_LOGIN);
     await page.fill('input[name="password"]', ADMIN_PASSWORD);
     await page.click('button:has-text("Sign in")');
-    await page.waitForTimeout(300);
-    await page.reload();
     await page.waitForSelector('text=Incident maps');
 
     const title = `E2E Storm ${Date.now()}`;
