@@ -73,7 +73,7 @@ export function AdminApp({ signedIn }: { signedIn: boolean }) {
       setMessage(data.error ?? 'Could not sign in');
       return;
     }
-    router.refresh();
+    router.replace('/admin');
   }
 
   async function logout() {
@@ -81,7 +81,7 @@ export function AdminApp({ signedIn }: { signedIn: boolean }) {
       method: 'POST',
       headers: { 'x-csrf-token': getCsrfToken() },
     });
-    router.refresh();
+    router.replace('/admin');
   }
 
   async function create(form: FormData) {
