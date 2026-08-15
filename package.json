@@ -23,6 +23,7 @@
     "cleanup": "tsx scripts/cleanup.ts",
     "preflight": "tsx scripts/preflight.ts",
     "smoke": "tsx scripts/deployment-smoke.ts",
+    "smoke:browser": "tsx scripts/live-browser-smoke.ts",
     "backup:restore:drill": "scripts/backup-restore-drill.sh"
   },
   "dependencies": {

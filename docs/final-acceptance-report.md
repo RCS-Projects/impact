@@ -39,6 +39,9 @@ pipeline, SSE implementation, public map/report flows, and administrator flows.
 
 - Strict shared display-settings and reporting-area schemas are used by admin
   routes and incident services.
+- Reporting-area validation starts from a strict discriminated GeoJSON
+  Polygon/MultiPolygon schema before applying Canada bounds, ring, and vertex
+  checks.
 - Point, polygon, and mixed report geometry validation and persistence remain
   covered by PostGIS integration tests, including public polygon output and
   private-point separation.
@@ -98,6 +101,13 @@ the Playwright headless-shell binary expected by the installed browser revision;
 therefore the browser run is recorded as **blocked**, not passed. The configured
 matrix and Axe checks require a CI/development image with compatible browser
 binaries.
+
+The live root URL was also checked non-destructively: it returned HTTP 200 with
+server-rendered landing-page content, a loadable stylesheet, and the required
+security headers. A browser-console smoke could not launch in this environment
+because the compatible Chromium headless-shell binary is unavailable; any
+visual blank-page report still needs confirmation in a real browser or
+deployment console.
 
 ## Privacy evidence
 

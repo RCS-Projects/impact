@@ -46,31 +46,29 @@ function validRing(value: unknown): value is Position[] {
   return first[0] === last[0] && first[1] === last[1];
 }
 
-export const reportingAreaSchema = z.unknown().superRefine((value, ctx) => {
-  if (value === null || value === undefined) return;
-  if (!value || typeof value !== 'object') {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Reporting area must be GeoJSON' });
-    return;
-  }
-  const area = value as { type?: unknown; coordinates?: unknown };
-  const polygons: unknown[] =
-    area.type === 'Polygon'
-      ? [area.coordinates]
-      : area.type === 'MultiPolygon'
-        ? Array.isArray(area.coordinates)
-          ? area.coordinates
-          : []
-        : [];
-  if (!['Polygon', 'MultiPolygon'].includes(String(area.type)) || polygons.length === 0) {
+const positionSchema = z.array(z.number().finite()).min(2).max(3);
+const ringSchema = z.array(positionSchema).min(4).max(5_000);
+const polygonCoordinatesSchema = z.array(ringSchema).min(1);
+
+const reportingAreaShapeSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('Polygon'), coordinates: polygonCoordinatesSchema }).strict(),
+  z
+    .object({ type: z.literal('MultiPolygon'), coordinates: z.array(polygonCoordinatesSchema) })
+    .strict(),
+]);
+
+export const reportingAreaSchema = reportingAreaShapeSchema.superRefine((area, ctx) => {
+  const polygons = area.type === 'Polygon' ? [area.coordinates] : area.coordinates;
+  if (polygons.length === 0) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: 'Reporting area must be a Polygon or MultiPolygon',
+      message: 'Reporting area must contain at least one polygon',
     });
     return;
   }
   let vertices = 0;
   for (const polygon of polygons) {
-    if (!Array.isArray(polygon) || polygon.length === 0 || !polygon.every(validRing)) {
+    if (!polygon.every(validRing)) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: 'Reporting area rings must be closed and valid',
