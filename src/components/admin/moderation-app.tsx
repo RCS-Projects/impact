@@ -49,6 +49,7 @@ export function ModerationApp() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [note, setNote] = useState('');
   const [selectedReport, setSelectedReport] = useState<QueueReport | null>(null);
+  const [revealedLocation, setRevealedLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const limit = 25;
 
   const load = useCallback(async () => {
@@ -68,6 +69,7 @@ export function ModerationApp() {
     setError('');
     setSelected(new Set());
     setSelectedReport(null);
+    setRevealedLocation(null);
   }, [incidentId, status, page]);
 
   useEffect(() => {
@@ -313,7 +315,7 @@ export function ModerationApp() {
         <aside className="moderation-detail" aria-label="Selected report details">
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: '.75rem', alignItems: 'center' }}>
             <h2>Report details</h2>
-            <button type="button" className="button button-secondary button-sm" onClick={() => setSelectedReport(null)}>Close</button>
+            <button type="button" className="button button-secondary button-sm" onClick={() => { setSelectedReport(null); setRevealedLocation(null); }}>Close</button>
           </div>
           <p><strong>{selectedReport.incidentTitle}</strong> · {formatRelativeTime(selectedReport.createdAt)}</p>
           <p className="hint">{selectedReport.placeLabel ?? 'No public place label'} · Privacy: {selectedReport.privacy}</p>
@@ -321,6 +323,17 @@ export function ModerationApp() {
           <dl>
             {Object.entries(selectedReport.answers).map(([key, value]) => <div key={key}><dt className="hint">{key.replaceAll('_', ' ')}</dt><dd>{Array.isArray(value) ? value.join(', ') : typeof value === 'object' ? '[photo or structured answer]' : String(value)}</dd></div>)}
           </dl>
+          {revealedLocation ? (
+            <p className="notice notice-warn">Exact location revealed: {revealedLocation.latitude}, {revealedLocation.longitude}</p>
+          ) : (
+            <button type="button" className="button button-danger button-sm" onClick={async () => {
+              if (!window.confirm('Reveal the exact submitted location? This action is audited.')) return;
+              const response = await fetch(`/api/admin/reports/${selectedReport.id}/true-location`);
+              if (!response.ok) { setError('Could not reveal the exact location'); return; }
+              const data = (await response.json()) as { location: { latitude: number; longitude: number } };
+              setRevealedLocation(data.location);
+            }}>Reveal exact location</button>
+          )}
           <div className="buttons">
             {ACTIONS.map((action) => <button key={action.action} type="button" className={`button button-sm ${action.className ?? 'button-secondary'}`} onClick={() => { void act(selectedReport.id, action.action); setSelectedReport(null); }}>{action.label}</button>)}
           </div>
