@@ -29,6 +29,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       url,
       siteName: 'Impact Maps',
       type: 'website',
+      images: [{ url: '/favicon.svg', alt: 'Impact Maps' }],
     },
     twitter: { card: 'summary', title, description },
   };

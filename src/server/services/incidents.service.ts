@@ -219,12 +219,4 @@ export function listForAdmin() {
   return incidentsRepo.listForAdmin(getSql());
 }
 
-export function listPublicLive() {
-  return incidentsRepo.listPublicLive(getSql());
-}
-
-export function listPublicAll() {
-  return incidentsRepo.listPublicAll(getSql());
-}
-
 export { PUBLIC_ID_PATTERN };

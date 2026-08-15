@@ -1,5 +1,6 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { getCsrfToken } from '@/lib/csrf';
 import { PolygonEditor } from '@/components/admin/polygon-editor';
 
@@ -29,6 +30,7 @@ async function adminApi(path: string, body: unknown) {
 }
 
 export function AdminApp({ signedIn }: { signedIn: boolean }) {
+  const router = useRouter();
   const [message, setMessage] = useState('');
   const [incidents, setIncidents] = useState<AdminIncident[]>([]);
   const [templates, setTemplates] = useState<TemplateOption[]>([]);
@@ -67,7 +69,7 @@ export function AdminApp({ signedIn }: { signedIn: boolean }) {
       setMessage(data.error ?? 'Could not sign in');
       return;
     }
-    window.location.reload();
+    router.refresh();
   }
 
   async function logout() {
@@ -75,7 +77,7 @@ export function AdminApp({ signedIn }: { signedIn: boolean }) {
       method: 'POST',
       headers: { 'x-csrf-token': getCsrfToken() },
     });
-    window.location.reload();
+    router.refresh();
   }
 
   async function create(form: FormData) {

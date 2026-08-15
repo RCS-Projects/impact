@@ -73,41 +73,6 @@ export function listForAdmin(db: postgres.Sql) {
   `;
 }
 
-export function listPublicLive(db: postgres.Sql) {
-  return db<
-    { reference: string; title: string; description: string | null; publishedAt: string | null }[]
-  >`
-    SELECT canonical_slug || '-' || public_id AS reference, title, description,
-      published_at::text AS "publishedAt"
-    FROM incidents
-    WHERE status = 'live'
-    ORDER BY published_at DESC
-    LIMIT 50
-  `;
-}
-
-export function listPublicAll(db: postgres.Sql) {
-  return db<
-    {
-      reference: string;
-      title: string;
-      description: string | null;
-      status: string;
-      publishedAt: string | null;
-      reportCount: number;
-    }[]
-  >`
-    SELECT canonical_slug || '-' || public_id AS reference, title, description,
-      status::text AS status, published_at::text AS "publishedAt",
-      (SELECT count(*)::int FROM reports r WHERE r.incident_id = i.id
-        AND r.status IN ('unverified', 'verified', 'resolved')) AS "reportCount"
-    FROM incidents i
-    WHERE status IN ('live', 'closed')
-    ORDER BY status = 'live' DESC, published_at DESC
-    LIMIT 50
-  `;
-}
-
 export function create(
   db: postgres.Sql,
   incident: {
