@@ -43,7 +43,7 @@ export function PolygonEditor({
         markersRef.current.push(marker);
       });
     },
-    [],
+    [onChange],
   );
 
   const updateSource = useCallback(
