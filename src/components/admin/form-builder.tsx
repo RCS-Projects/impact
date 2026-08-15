@@ -2,9 +2,8 @@
 import { useState } from 'react';
 import { fieldTypes, type FormField, type FieldType } from '@/server/schema/form-schema';
 
-let nextId = 0;
 function tempKey() {
-  return `field_${++nextId}`;
+  return `field_${crypto.randomUUID().replaceAll('-', '').slice(0, 12)}`;
 }
 
 function newField(order: number): FormField {
@@ -33,9 +32,11 @@ const TYPE_LABELS: Record<FieldType, string> = {
 export function FormBuilder({
   value,
   onChange,
+  lockedKeys = new Set<string>(),
 }: {
   value: FormField[];
   onChange: (fields: FormField[]) => void;
+  lockedKeys?: Set<string>;
 }) {
   const [expanded, setExpanded] = useState<string | null>(null);
 
@@ -135,6 +136,7 @@ export function FormBuilder({
                   Key
                   <input
                     value={field.key}
+                    disabled={lockedKeys.has(field.key)}
                     onChange={(e) => update(field.key, { key: e.target.value.replace(/[^a-z0-9_]/g, '') })}
                     pattern="^[a-z][a-z0-9_]{0,63}$"
                     maxLength={64}
@@ -152,6 +154,7 @@ export function FormBuilder({
                   Type
                   <select
                     value={field.type}
+                    disabled={lockedKeys.has(field.key)}
                     onChange={(e) => {
                       const type = e.target.value as FieldType;
                       const patch: Partial<FormField> = { type };

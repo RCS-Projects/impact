@@ -1,5 +1,5 @@
 'use client';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCsrfToken } from '@/lib/csrf';
 import { PolygonEditor } from '@/components/admin/polygon-editor';
@@ -24,6 +24,7 @@ interface IncidentData {
   publishedAt: string | null;
   closedAt: string | null;
   updatedAt: string;
+  reportCount: number;
 }
 
 async function adminApi(path: string, method: string, body?: unknown) {
@@ -44,6 +45,7 @@ export function IncidentEditor({ incidentId }: { incidentId: string }) {
   const [message, setMessage] = useState('');
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const lockedKeysRef = useRef<Set<string>>(new Set());
 
   const load = useCallback(async () => {
     const res = await fetch(`/api/admin/incidents/${incidentId}`);
@@ -53,6 +55,8 @@ export function IncidentEditor({ incidentId }: { incidentId: string }) {
     }
     const data = (await res.json()) as { incident: IncidentData };
     setIncident(data.incident);
+    const fields = (data.incident.formSchema as { fields?: FormField[] })?.fields ?? [];
+    lockedKeysRef.current = new Set(fields.map((field) => field.key));
   }, [incidentId]);
 
   useEffect(() => {
@@ -92,6 +96,7 @@ export function IncidentEditor({ incidentId }: { incidentId: string }) {
   }
 
   async function act(action: 'publish' | 'close' | 'archive') {
+    if (!window.confirm(`Are you sure you want to ${action} this incident?`)) return;
     setMessage('');
     const res = await adminApi(`/api/admin/incidents/${incidentId}/${action}`, 'POST', {});
     if (!res.ok) {
@@ -282,6 +287,7 @@ export function IncidentEditor({ incidentId }: { incidentId: string }) {
         </p>
         <FormBuilder
           value={(incident.formSchema as { fields: FormField[] })?.fields ?? []}
+          lockedKeys={incident.status === 'draft' ? new Set() : lockedKeysRef.current}
           onChange={(fields) =>
             updateField('formSchema', { version: 1, fields })
           }

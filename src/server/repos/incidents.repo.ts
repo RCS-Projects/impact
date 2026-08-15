@@ -164,6 +164,7 @@ export interface IncidentDetailRow extends IncidentPublicRow {
   closedAt: string | null;
   archivedAt: string | null;
   createdAt: string;
+  reportCount: number;
 }
 
 export function findByIdForAdmin(db: postgres.Sql, id: string) {
@@ -178,7 +179,8 @@ export function findByIdForAdmin(db: postgres.Sql, id: string) {
       i.initial_zoom::float AS zoom,
       CASE WHEN i.reporting_area IS NULL THEN NULL ELSE ST_AsGeoJSON(i.reporting_area::geometry)::jsonb END AS "reportingArea",
       i.form_schema AS "formSchema", i.display_settings AS "displaySettings",
-      i.report_expiry_days AS "reportExpiryDays"
+      i.report_expiry_days AS "reportExpiryDays",
+      (SELECT count(*)::int FROM reports r WHERE r.incident_id = i.id) AS "reportCount"
     FROM incidents i
     WHERE i.id = ${id}
     LIMIT 1

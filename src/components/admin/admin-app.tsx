@@ -107,6 +107,8 @@ export function AdminApp({ signedIn }: { signedIn: boolean }) {
   }
 
   async function act(incidentId: string, action: 'publish' | 'close' | 'archive') {
+    const consequence = action === 'publish' ? 'make this map public' : action === 'close' ? 'stop accepting new reports' : 'archive this incident';
+    if (!window.confirm(`Are you sure you want to ${action} this incident and ${consequence}?`)) return;
     setMessage('');
     const response = await adminApi(`/api/admin/incidents/${incidentId}/${action}`, {});
     if (!response.ok) {

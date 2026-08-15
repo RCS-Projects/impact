@@ -545,6 +545,9 @@ export function IncidentMapView(props: IncidentMapViewProps) {
         )}
 
         {loadError && <div className="map-note notice-error">{loadError}</div>}
+        {!loadError && mapReady && reports.length === 0 && (
+          <div className="map-note">No reports match the current view or filters.</div>
+        )}
         {!selected && (
           <div className="map-note">
             Reports are crowdsourced and may not be independently verified.
