@@ -102,6 +102,24 @@ export function IncidentEditor({ incidentId }: { incidentId: string }) {
     void load();
   }
 
+  async function downloadSensitive(format: 'csv' | 'json') {
+    if (!window.confirm('Sensitive export includes exact submitted locations. Download only for secure handling?')) return;
+    const response = await fetch(`/api/admin/incidents/${incidentId}/export?format=${format}&sensitive=true`, {
+      headers: { 'x-sensitive-export-confirm': 'yes' },
+    });
+    if (!response.ok) {
+      setMessage('Sensitive export failed');
+      return;
+    }
+    const blob = await response.blob();
+    const href = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = href;
+    link.download = `${incidentId}-sensitive.${format}`;
+    link.click();
+    URL.revokeObjectURL(href);
+  }
+
   if (!incident) {
     return <main className="shell"><p className="hint">Loading incident...</p></main>;
   }
@@ -368,6 +386,14 @@ export function IncidentEditor({ incidentId }: { incidentId: string }) {
               >
                 JSON
               </a>
+            </div>
+          </dd>
+          <dt className="hint">Sensitive export</dt>
+          <dd>
+            <p className="hint">Includes exact submitted locations. Every download is audited.</p>
+            <div className="buttons" style={{ marginTop: 0 }}>
+              <button type="button" className="button button-danger button-sm" onClick={() => void downloadSensitive('csv')}>Sensitive CSV</button>
+              <button type="button" className="button button-danger button-sm" onClick={() => void downloadSensitive('json')}>Sensitive JSON</button>
             </div>
           </dd>
           <dt className="hint">Public URL</dt>

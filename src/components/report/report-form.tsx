@@ -51,6 +51,7 @@ export function ReportForm({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState<{ editUrl?: string; flagged: boolean } | null>(null);
+  const [shareMessage, setShareMessage] = useState('');
 
   const needsExactConfirmation =
     mode === 'edit' && initial?.privacy === 'approximate' && privacy === 'exact';
@@ -126,6 +127,26 @@ export function ReportForm({
   }
 
   if (success) {
+    const publicPath = `/map/${reference}`;
+    const publicUrl = typeof window !== 'undefined' ? `${window.location.origin}${publicPath}` : publicPath;
+    async function sharePublicMap() {
+      setShareMessage('');
+      try {
+        if (navigator.share) await navigator.share({ title: 'Impact incident map', url: publicUrl });
+        else await navigator.clipboard?.writeText(publicUrl);
+        setShareMessage('Public map link copied.');
+      } catch {
+        setShareMessage('Sharing was cancelled or unavailable.');
+      }
+    }
+    async function copyPublicMap() {
+      try {
+        await navigator.clipboard?.writeText(publicUrl);
+        setShareMessage('Public map link copied.');
+      } catch {
+        setShareMessage('Could not copy the public map link.');
+      }
+    }
     return (
       <div className="form-block" role="status">
         <h2>Thank you — your report has been saved.</h2>
@@ -160,7 +181,22 @@ export function ReportForm({
               <a className="button" href={`/map/${reference}`}>
                 View the map
               </a>
+              <button type="button" className="button button-secondary" onClick={() => void sharePublicMap()}>
+                Share public map
+              </button>
+              <button type="button" className="button button-secondary" onClick={() => void copyPublicMap()}>
+                Copy public map link
+              </button>
+              <a
+                className="button button-secondary"
+                href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(publicUrl)}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Share on Facebook
+              </a>
             </div>
+            {shareMessage && <p className="notice notice-success" role="status">{shareMessage}</p>}
           </>
         ) : (
           <p className="notice notice-success">Your report has been updated.</p>
@@ -184,40 +220,21 @@ export function ReportForm({
 
       <fieldset className="field">
         <legend>Location privacy</legend>
-        <div className="privacy-cards" role="radiogroup" aria-label="Location privacy choice">
-          <div
-            className="privacy-card"
-            role="radio"
-            aria-checked={privacy === 'approximate'}
-            tabIndex={0}
-            onClick={() => setPrivacy('approximate')}
-            onKeyDown={(event) => event.key === 'Enter' && setPrivacy('approximate')}
-          >
+        <div className="privacy-cards">
+          <label className="privacy-card">
+            <input type="radio" name="privacy-choice" value="approximate" checked={privacy === 'approximate'} onChange={() => setPrivacy('approximate')} />
             <strong>Approximate (recommended)</strong>
             <span>
               Only a randomized pin within a 500-foot circle is shown publicly. Your exact position
               and address stay private.
             </span>
-          </div>
-          <div
-            className="privacy-card"
-            role="radio"
-            aria-checked={privacy === 'exact'}
-            tabIndex={0}
-            onClick={() => setPrivacy('exact')}
-            onKeyDown={(event) => event.key === 'Enter' && setPrivacy('exact')}
-          >
+          </label>
+          <label className="privacy-card">
+            <input type="radio" name="privacy-choice" value="exact" checked={privacy === 'exact'} onChange={() => setPrivacy('exact')} />
             <strong>Exact location</strong>
             <span>Your exact pin is shown publicly. Choose this only if you are comfortable.</span>
-          </div>
+          </label>
         </div>
-        <input
-          className="visually-hidden"
-          type="radio"
-          name="privacy-choice"
-          checked={privacy === 'approximate'}
-          onChange={() => setPrivacy('approximate')}
-        />
       </fieldset>
 
       {needsExactConfirmation && (

@@ -114,10 +114,13 @@ export function LocationPicker({
       setSearchState('idle');
       return;
     }
+    const controller = new AbortController();
     const timer = setTimeout(async () => {
       setSearchState('searching');
       try {
-        const response = await fetch(`/api/geocode/search?q=${encodeURIComponent(trimmed)}`);
+        const response = await fetch(`/api/geocode/search?q=${encodeURIComponent(trimmed)}`, {
+          signal: controller.signal,
+        });
         const data = (await response.json().catch(() => ({}))) as {
           results?: GeocodeResult[];
           error?: string;
@@ -131,12 +134,13 @@ export function LocationPicker({
         setSearchState('idle');
         setSearchError('');
         setResults(data.results ?? []);
-      } catch {
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') return;
         setSearchState('error');
         setSearchError('Address search unavailable');
       }
     }, 350);
-    return () => clearTimeout(timer);
+    return () => { clearTimeout(timer); controller.abort(); };
   }, [query]);
 
   function geolocate() {
@@ -203,7 +207,7 @@ export function LocationPicker({
       <div
         ref={container}
         className="picker-map"
-        role="application"
+        role="img"
         aria-label="Click or drag the marker to choose the report location"
       />
       {value && (

@@ -4,17 +4,22 @@ import { getSql } from '@/server/db/client';
 import { noStore } from '@/server/http';
 import { requireAdminRole } from '@/server/services/auth.service';
 import * as incidentsRepo from '@/server/repos/incidents.repo';
+import * as auditRepo from '@/server/repos/audit.repo';
 
 export const dynamic = 'force-dynamic';
 
 export const GET = handleApi(
   async (request: NextRequest, { params }: { params: { id: string } }) => {
-    await requireAdminRole(request);
+    const admin = await requireAdminRole(request);
     const db = getSql();
     const incident = await incidentsRepo.findByIdForAdmin(db, params.id);
     if (!incident) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
     const format = request.nextUrl.searchParams.get('format') ?? 'json';
+    const sensitive = request.nextUrl.searchParams.get('sensitive') === 'true';
+    if (sensitive && request.headers.get('x-sensitive-export-confirm') !== 'yes') {
+      return NextResponse.json({ error: 'Explicit confirmation is required for sensitive exports' }, { status: 400, headers: noStore() });
+    }
     const rows = await db<
       {
         id: string;
@@ -25,17 +30,32 @@ export const GET = handleApi(
         latitude: number;
         status: string;
         createdAt: string;
+        exactLongitude?: number | null;
+        exactLatitude?: number | null;
       }[]
     >`
       SELECT r.id, r.answers, r.public_place_label AS "placeLabel",
         r.location_privacy::text AS privacy,
         ST_X(r.public_coordinate::geometry) AS longitude,
         ST_Y(r.public_coordinate::geometry) AS latitude,
-        r.status::text AS status, r.created_at::text AS "createdAt"
+        r.status::text AS status, r.created_at::text AS "createdAt",
+        ${sensitive ? db`ST_X(p.submitted_coordinate::geometry)` : db`NULL`} AS "exactLongitude",
+        ${sensitive ? db`ST_Y(p.submitted_coordinate::geometry)` : db`NULL`} AS "exactLatitude"
       FROM reports r
+      ${sensitive ? db`JOIN report_private_locations p ON p.report_id = r.id` : db``}
       WHERE r.incident_id = ${params.id}
       ORDER BY r.created_at DESC
     `;
+
+    if (sensitive) {
+      await auditRepo.record(db, {
+        incidentId: params.id,
+        actorType: 'admin',
+        actorId: admin.id,
+        eventType: 'sensitive_export_downloaded',
+        metadata: { format, rowCount: rows.length },
+      });
+    }
 
     if (format === 'csv') {
       const allKeys = new Set<string>();
@@ -43,7 +63,7 @@ export const GET = handleApi(
         for (const key of Object.keys(row.answers)) allKeys.add(key);
       }
       const answerKeys = [...allKeys].sort();
-      const header = ['id', 'status', 'createdAt', 'latitude', 'longitude', 'privacy', 'placeLabel', ...answerKeys];
+      const header = ['id', 'status', 'createdAt', 'latitude', 'longitude', ...(sensitive ? ['exactLatitude', 'exactLongitude'] : []), 'privacy', 'placeLabel', ...answerKeys];
       const csvRows = rows.map((row) => {
         const base = [
           row.id,
@@ -51,6 +71,7 @@ export const GET = handleApi(
           row.createdAt,
           String(row.latitude),
           String(row.longitude),
+          ...(sensitive ? [String(row.exactLatitude ?? ''), String(row.exactLongitude ?? '')] : []),
           row.privacy,
           row.placeLabel ?? '',
         ];
@@ -68,6 +89,7 @@ export const GET = handleApi(
       return new NextResponse(csv, {
         headers: {
           'Content-Type': 'text/csv',
+          ...noStore(),
           'Content-Disposition': `attachment; filename="${incident.slug}-${new Date().toISOString().slice(0, 10)}.csv"`,
         },
       });
@@ -76,7 +98,8 @@ export const GET = handleApi(
     return NextResponse.json(
       { incident: { title: incident.title, slug: incident.slug, status: incident.status }, reports: rows },
       {
-        headers: {
+      headers: {
+          ...noStore(),
           'Content-Disposition': `attachment; filename="${incident.slug}-${new Date().toISOString().slice(0, 10)}.json"`,
         },
       },
