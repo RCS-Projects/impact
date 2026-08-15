@@ -69,7 +69,10 @@ describe.runIf(available)('PostGIS integration', () => {
   let tokens: typeof import('@/server/security/tokens');
   let stormDamageTemplate: import('@/server/templates/seed-templates').SeedTemplate;
 
-  async function makeIncident(withArea: boolean) {
+  async function makeIncident(
+    withArea: boolean,
+    reportGeometryMode: 'point' | 'polygon' | 'point_or_polygon' = 'point',
+  ) {
     const row = await incidentsRepo.create(sql, {
       publicId: tokens.newPublicId(),
       slug: 'test-storm',
@@ -81,6 +84,7 @@ describe.runIf(available)('PostGIS integration', () => {
       zoom: 10,
       reportingAreaGeoJson: withArea ? AREA : null,
       reportExpiryDays: null,
+      reportGeometryMode,
     });
     if (!row) throw new Error('incident insert failed');
     return row;
@@ -134,6 +138,42 @@ describe.runIf(available)('PostGIS integration', () => {
 
     const noArea = await makeIncident(false);
     expect(await incidentsRepo.geofenceAllows(sql, noArea.id, outsideWkt)).toBe(true);
+  });
+
+  it('stores and returns public polygon report geometry for polygon incidents', async () => {
+    const incident = await makeIncident(true, 'polygon');
+    await incidentsRepo.publish(sql, incident.id);
+    const reference = `${incident.slug}-${incident.publicId}`;
+    const polygon = {
+      type: 'Polygon',
+      coordinates: [[
+        [-75.72, 45.40],
+        [-75.66, 45.40],
+        [-75.66, 45.44],
+        [-75.72, 45.44],
+        [-75.72, 45.40],
+      ]],
+    } as const;
+    const created = await reportsService.createReport({
+      reference,
+      latitude: 45.42,
+      longitude: -75.69,
+      privacy: 'exact',
+      answers: stormAnswers(),
+      browserTokenCookie: null,
+      ip: '203.0.113.90',
+      geometry: polygon,
+    });
+    expect(created.reportId).toBeTruthy();
+    const rows = await reportsRepo.queryPublic(
+      sql,
+      incident.id,
+      { west: -76.5, south: 44.5, east: -74.5, north: 46.5 },
+      { statuses: [], fieldFilters: {} },
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.geometryType).toBe('ST_Polygon');
+    expect(rows[0]?.geometry).toMatchObject({ type: 'Polygon' });
   });
 
   it('runs the full submission pipeline with private/public separation', async () => {
