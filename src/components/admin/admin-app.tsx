@@ -35,6 +35,7 @@ export function AdminApp({ signedIn }: { signedIn: boolean }) {
   const [message, setMessage] = useState('');
   const [incidents, setIncidents] = useState<AdminIncident[]>([]);
   const [templates, setTemplates] = useState<TemplateOption[]>([]);
+  const [templateKey, setTemplateKey] = useState('storm-damage');
   const [reportingArea, setReportingArea] = useState<unknown | null>(null);
   const [reportingAreaError, setReportingAreaError] = useState('');
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -89,7 +90,7 @@ export function AdminApp({ signedIn }: { signedIn: boolean }) {
     const response = await adminApi('/api/admin/incidents', {
       title: form.get('title'),
       description: String(form.get('description') ?? '') || undefined,
-      templateKey: form.get('templateKey'),
+      templateKey: templateKey,
       center: {
         latitude: Number(form.get('latitude')),
         longitude: Number(form.get('longitude')),
@@ -203,7 +204,7 @@ export function AdminApp({ signedIn }: { signedIn: boolean }) {
           </label>
           <label className="field">
             Template
-            <select name="templateKey" defaultValue={templates.some((template) => template.key === 'storm-damage') ? 'storm-damage' : templates[0]?.key ?? 'storm-damage'}>
+            <select name="templateKey" value={templateKey} onChange={(event) => setTemplateKey(event.target.value)}>
               {templates.map((t) => (
                 <option key={t.key} value={t.key}>{t.title}</option>
               ))}
