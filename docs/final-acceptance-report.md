@@ -56,8 +56,8 @@ pipeline, SSE implementation, public map/report flows, and administrator flows.
 
 ### Tests and verification
 
-- Unit suite in the Node 20 container: **39 passed** across 8 files.
-- PostGIS integration suite in the Node 20 container: **14 passed**.
+- Unit and PostGIS suites in the Node 20 container: **53 passed** across 9
+  files (39 unit tests and 14 integration tests).
 - Production image build completed successfully with Next compilation,
   lint/type checking, and static generation.
 - Docker Compose app and database are healthy. `/api/health`, readiness, and
