@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { ZodError } from 'zod';
+import crypto from 'node:crypto';
 import { logError } from './log';
 
 export class AppError extends Error {
@@ -65,10 +66,15 @@ export function handleApi<Args extends unknown[]>(
   handler: (...args: Args) => Promise<NextResponse>,
 ): (...args: Args) => Promise<NextResponse> {
   return async (...args: Args) => {
+    const requestId = crypto.randomUUID();
     try {
-      return await handler(...args);
+      const response = await handler(...args);
+      response.headers.set('X-Request-ID', requestId);
+      return response;
     } catch (error) {
-      return errorResponse(error);
+      const response = errorResponse(error);
+      response.headers.set('X-Request-ID', requestId);
+      return response;
     }
   };
 }

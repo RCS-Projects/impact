@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_DB: impact_test
+          POSTGRES_USER: impact
+          POSTGRES_PASSWORD: impact-test-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U impact -d impact_test"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    env:
+      DATABASE_URL: postgresql://impact:impact-test-password@127.0.0.1:5432/impact_test
+      APP_URL: http://localhost:3000
+      SESSION_SECRET: test-session-secret-test-session-secret-test
+      IP_HASH_SECRET: test-ip-hash-secret-test-ip-hash-secret-test
+      NOMINATIM_SEARCH_URL: http://127.0.0.1:9/nominatim/search
+      IMPACT_RUNTIME_MODE: test
+      DEVELOPMENT_TURNSTILE_BYPASS: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: npm
+      - run: npm ci
+      - run: npm run db:migrate
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
