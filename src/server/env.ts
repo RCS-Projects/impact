@@ -14,6 +14,9 @@ const schema = z.object({
   TURNSTILE_SECRET_KEY: z.string().optional().or(z.literal('')),
   DEVELOPMENT_TURNSTILE_BYPASS: z.enum(['true', 'false']).default('false'),
   UPLOAD_DIR: z.string().optional(),
+  DEFAULT_MAP_LATITUDE: z.coerce.number().min(41).max(84).default(45.4215),
+  DEFAULT_MAP_LONGITUDE: z.coerce.number().min(-142).max(-52).default(-75.6972),
+  DEFAULT_MAP_ZOOM: z.coerce.number().min(3).max(18).default(10),
 });
 
 export type Env = z.infer<typeof schema>;
@@ -43,4 +46,13 @@ export function runtimeMode(): 'development' | 'test' | 'production' {
 
 export function isProduction(): boolean {
   return runtimeMode() === 'production';
+}
+
+export function defaultMapCenter() {
+  const env = getEnv();
+  return {
+    latitude: env.DEFAULT_MAP_LATITUDE,
+    longitude: env.DEFAULT_MAP_LONGITUDE,
+    zoom: env.DEFAULT_MAP_ZOOM,
+  };
 }

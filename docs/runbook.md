@@ -9,6 +9,7 @@ LAN IP only temporarily with firewall allow-rules.
 ```bash
 # .env must define: APP_URL, POSTGRES_PASSWORD, SESSION_SECRET, IP_HASH_SECRET,
 # NOMINATIM_SEARCH_URL, TURNSTILE_SITE_KEY, TURNSTILE_SECRET_KEY
+# Optional map defaults: DEFAULT_MAP_LATITUDE, DEFAULT_MAP_LONGITUDE, DEFAULT_MAP_ZOOM
 docker-compose up -d --build
 docker-compose exec app npm run db:migrate
 docker-compose exec app npm run db:seed          # first deploy only
@@ -125,6 +126,13 @@ geometry) only. A separate admin-only `sensitive=true` request includes exact po
 coordinates, requires explicit confirmation, sends `no-store`, and records an audit
 event. Treat that download as sensitive and transfer it only through an approved
 secure channel.
+
+## Content security policy
+
+Middleware issues a per-request nonce for framework inline scripts and styles. The
+remaining `style-src-attr` exception exists only for legacy React style attributes;
+new UI must use named CSS classes, and the exception can be removed once the inline
+style inventory is fully migrated.
 
 ## Deployment smoke test
 

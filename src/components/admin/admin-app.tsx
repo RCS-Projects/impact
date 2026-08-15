@@ -30,7 +30,13 @@ async function adminApi(path: string, body: unknown) {
   });
 }
 
-export function AdminApp({ signedIn }: { signedIn: boolean }) {
+export function AdminApp({
+  signedIn,
+  defaultCenter,
+}: {
+  signedIn: boolean;
+  defaultCenter: { latitude: number; longitude: number; zoom: number };
+}) {
   const router = useRouter();
   const [message, setMessage] = useState('');
   const [incidents, setIncidents] = useState<AdminIncident[]>([]);
@@ -232,15 +238,15 @@ export function AdminApp({ signedIn }: { signedIn: boolean }) {
           <div className="grid-3">
             <label className="field">
               Latitude
-              <input name="latitude" type="number" step="any" required defaultValue="45.4215" />
+              <input name="latitude" type="number" step="any" required defaultValue={defaultCenter.latitude} />
             </label>
             <label className="field">
               Longitude
-              <input name="longitude" type="number" step="any" required defaultValue="-75.6972" />
+              <input name="longitude" type="number" step="any" required defaultValue={defaultCenter.longitude} />
             </label>
             <label className="field">
               Zoom
-              <input name="zoom" type="number" min="3" max="18" required defaultValue="10" />
+              <input name="zoom" type="number" min="3" max="18" required defaultValue={defaultCenter.zoom} />
             </label>
           </div>
           <label className="field">
@@ -249,7 +255,7 @@ export function AdminApp({ signedIn }: { signedIn: boolean }) {
               Draw the reporting boundary on the map, or paste GeoJSON below.
             </span>
             <PolygonEditor
-              center={[-75.6972, 45.4215]}
+              center={[defaultCenter.longitude, defaultCenter.latitude]}
               value={
                 reportingArea &&
                 typeof reportingArea === 'object' &&

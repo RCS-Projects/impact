@@ -1,7 +1,10 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
 export function middleware(_request: NextRequest) {
-  const response = NextResponse.next();
+  const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
+  const requestHeaders = new Headers(_request.headers);
+  requestHeaders.set('x-nonce', nonce);
+  const response = NextResponse.next({ request: { headers: requestHeaders } });
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('X-Frame-Options', 'DENY');
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
@@ -11,8 +14,9 @@ export function middleware(_request: NextRequest) {
   }
   const csp = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com",
-    "style-src 'self' 'unsafe-inline'",
+    `script-src 'self' 'nonce-${nonce}' https://challenges.cloudflare.com`,
+    `style-src 'self' 'nonce-${nonce}'`,
+    "style-src-attr 'unsafe-inline'",
     "img-src 'self' data: blob: https://openfreemap.org https://*.openfreemap.org",
     "connect-src 'self' https://openfreemap.org https://*.openfreemap.org https://challenges.cloudflare.com",
     "worker-src 'self' blob:",
