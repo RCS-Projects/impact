@@ -205,6 +205,12 @@ export function LocationPicker({
         <button type="button" className="button button-secondary button-sm" onClick={geolocate}>
           Use my location
         </button>
+        <button type="button" className="button button-secondary button-sm" onClick={() => {
+          const map = mapRef.current;
+          if (map) setMarker(map, { latitude: center[1], longitude: center[0], placeLabel: 'Map centre' });
+        }}>
+          Use map centre
+        </button>
       </div>
       <div
         ref={container}
