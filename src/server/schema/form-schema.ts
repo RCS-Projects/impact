@@ -122,11 +122,12 @@ export function validateAnswers(
           answer !== undefined &&
           (typeof answer !== 'object' ||
             typeof (answer as Record<string, unknown>).uploadId !== 'string' ||
-            typeof (answer as Record<string, unknown>).url !== 'string')
+            !z.string().uuid().safeParse((answer as Record<string, unknown>).uploadId).success ||
+            Object.keys(answer as Record<string, unknown>).some((key) => key !== 'uploadId'))
         ) {
-          throw AppError.badRequest(`${field.label} must be a valid photo upload`);
+          throw AppError.badRequest(`${field.label} must reference a valid photo upload`);
         }
-        if (answer) output[field.key] = answer;
+        if (answer) output[field.key] = { uploadId: (answer as { uploadId: string }).uploadId };
         break;
       }
       default:

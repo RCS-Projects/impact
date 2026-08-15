@@ -1,4 +1,6 @@
 import postgres from 'postgres';
+import { unlink } from 'node:fs/promises';
+import path from 'node:path';
 
 async function main() {
   const databaseUrl = process.env.DATABASE_URL;
@@ -29,6 +31,25 @@ async function main() {
       RETURNING key
     `;
     console.log(`Cleaned ${oldGeo.length} expired geocode cache entry(ies)`);
+
+    const orphaned = await db<{ filename: string }[]>`
+      DELETE FROM uploads
+      WHERE report_id IS NULL
+        AND created_at < now() - interval '1 hour'
+      RETURNING filename
+    `;
+    const uploadDir = process.env.UPLOAD_DIR ?? path.join(process.cwd(), 'data', 'uploads');
+    let removedFiles = 0;
+    for (const { filename } of orphaned) {
+      if (filename !== path.basename(filename)) continue;
+      try {
+        await unlink(path.join(uploadDir, filename));
+        removedFiles += 1;
+      } catch {
+        // The database row is still removed if the file was already absent.
+      }
+    }
+    console.log(`Cleaned ${orphaned.length} orphaned upload row(s), removed ${removedFiles} file(s)`);
   } catch (error) {
     console.error('Cleanup failed:', error);
     process.exit(1);

@@ -1,4 +1,5 @@
 import type postgres from 'postgres';
+import * as uploadsRepo from './uploads.repo';
 
 export interface EditableReportRow {
   answers: Record<string, unknown>;
@@ -61,6 +62,8 @@ export function update(
     radius: number | null;
     privatePointWkt: string;
     placeLabel: string | null;
+    uploadIds?: string[];
+    uploadClaimHash?: string;
     status?: string;
     suspiciousReasons?: string[];
   },
@@ -80,12 +83,16 @@ export function update(
     sets.push(tx`updated_at = now()`);
     const setClause = sets.reduce((acc, fragment) => tx`${acc}, ${fragment}`);
     await tx`UPDATE reports SET ${setClause} WHERE id = ${reportId}`;
-    await tx`
+      await tx`
       UPDATE report_private_locations
       SET submitted_coordinate = ST_GeogFromText(${update.privatePointWkt}),
         submitted_place_label = ${update.placeLabel}, updated_at = now()
       WHERE report_id = ${reportId}
-    `;
+      `;
+    if (update.uploadIds?.length && update.uploadClaimHash) {
+      const claimed = await uploadsRepo.claim(tx, update.uploadIds, update.uploadClaimHash, reportId);
+      if (claimed.length !== update.uploadIds.length) throw new Error('Could not claim photo upload');
+    }
   });
 }
 

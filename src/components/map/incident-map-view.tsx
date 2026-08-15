@@ -479,6 +479,8 @@ export function IncidentMapView(props: IncidentMapViewProps) {
                             src={(value as { url: string }).url}
                             alt={field.label}
                             loading="lazy"
+                            width={(value as { width?: number }).width}
+                            height={(value as { height?: number }).height}
                             style={{ maxWidth: '100%', maxHeight: 200, borderRadius: 4 }}
                           />
                         ) : (

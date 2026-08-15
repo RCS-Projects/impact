@@ -1,19 +1,22 @@
+import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 import { handleApi } from '@/server/errors';
 import { getSql } from '@/server/db/client';
 import { noStore } from '@/server/http';
 import { AppError } from '@/server/errors';
-import { nanoid } from 'nanoid';
 import { mkdir, writeFile } from 'fs/promises';
 import { join } from 'path';
-import { hmacIp } from '@/server/security/hashing';
+import { hashBrowserToken, hmacIp } from '@/server/security/hashing';
 import * as rateLimit from '@/server/services/rate-limit.service';
-import { stripImageMetadata } from '@/server/lib/image-metadata';
+import { newOpaqueToken } from '@/server/security/tokens';
+import { isProduction } from '@/server/env';
+import * as uploadsRepo from '@/server/repos/uploads.repo';
+import { sanitizeImage } from '@/server/lib/image-metadata';
 
 export const dynamic = 'force-dynamic';
 
-const ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+const UPLOAD_CLAIM_COOKIE = 'impact_upload_claim';
 
 function getUploadDir(): string {
   return process.env.UPLOAD_DIR ?? join(process.cwd(), 'data', 'uploads');
@@ -33,32 +36,51 @@ export const POST = handleApi(async (request: NextRequest) => {
   if (!file || !(file instanceof File)) {
     throw AppError.badRequest('No file provided');
   }
-  if (!ALLOWED_TYPES.has(file.type)) {
-    throw AppError.badRequest('Only JPEG, PNG, and WebP images are allowed');
-  }
   if (file.size > MAX_SIZE) {
     throw AppError.badRequest('File must be under 5MB');
   }
 
   const inputBuffer = Buffer.from(await file.arrayBuffer());
-  const ext = file.type === 'image/jpeg' ? '.jpg' : file.type === 'image/webp' ? '.webp' : '.png';
-  const filename = `${nanoid(16)}${ext}`;
+  const claimToken = cookies().get(UPLOAD_CLAIM_COOKIE)?.value ?? newOpaqueToken();
+  const claimHash = hashBrowserToken(claimToken);
+  let sanitized;
+  try {
+    sanitized = await sanitizeImage(inputBuffer);
+  } catch {
+    throw AppError.badRequest('The uploaded file is not a valid supported image');
+  }
+  const filename = `${newOpaqueToken()}${sanitized.extension}`;
   const uploadDir = getUploadDir();
   await mkdir(uploadDir, { recursive: true });
-
-  // Strip EXIF/metadata for privacy
-  const stripped = stripImageMetadata(inputBuffer, file.type);
-  await writeFile(join(uploadDir, filename), stripped);
-
-  const db = getSql();
-  const result = await db<{ id: string }[]>`
-    INSERT INTO uploads (filename, original_name, mime_type, size_bytes)
-    VALUES (${filename}, ${file.name}, ${file.type}, ${stripped.length})
-    RETURNING id
-  `.then((rows) => rows[0]);
-
-  return NextResponse.json(
-    { id: result?.id, url: `/api/uploads/files/${filename}`, filename },
-    { status: 201, headers: noStore() },
-  );
+  const filePath = join(uploadDir, filename);
+  await writeFile(filePath, sanitized.buffer, { flag: 'wx' });
+  try {
+    const db = getSql();
+    const id = await uploadsRepo.insert(db, {
+      filename,
+      originalName: file.name.slice(0, 255),
+      mimeType: sanitized.mimeType,
+      sizeBytes: sanitized.buffer.length,
+      width: sanitized.width,
+      height: sanitized.height,
+      claimHash,
+      expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+    });
+    if (!id) throw new Error('Upload insert failed');
+    const response = NextResponse.json(
+      { id, width: sanitized.width, height: sanitized.height },
+      { status: 201, headers: noStore() },
+    );
+    response.cookies.set(UPLOAD_CLAIM_COOKIE, claimToken, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: isProduction(),
+      maxAge: 60 * 60,
+      path: '/',
+    });
+    return response;
+  } catch (error) {
+    await import('fs/promises').then(({ unlink }) => unlink(filePath)).catch(() => undefined);
+    throw error;
+  }
 });

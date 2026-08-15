@@ -7,6 +7,7 @@ import * as incidentsRepo from '../repos/incidents.repo';
 import * as reportsRepo from '../repos/reports.repo';
 import type { ReportBounds } from '../repos/reports.repo';
 import * as reportsPrivateRepo from '../repos/reports-private.repo';
+import * as uploadsRepo from '../repos/uploads.repo';
 import { deriveFilters, incidentFormSchema, validateAnswers } from '../schema/form-schema';
 import { hashBrowserToken, hashContent, hmacIp } from '../security/hashing';
 import { approximatePoint, distanceMeters, PRIVACY_RADIUS_METERS } from '../security/privacy';
@@ -21,6 +22,49 @@ function pointWkt(longitude: number, latitude: number): string {
   return `SRID=4326;POINT(${longitude} ${latitude})`;
 }
 
+async function resolvePhotoAnswers(
+  db: ReturnType<typeof getSql>,
+  schema: ReturnType<typeof incidentFormSchema.parse>,
+  answers: Record<string, unknown>,
+  claimToken: string | null,
+  reportId?: string,
+) {
+  const ids = schema.fields
+    .filter((field) => field.type === 'photo')
+    .map((field) => answers[field.key])
+    .filter((value): value is { uploadId: string } => Boolean(value && typeof value === 'object' && 'uploadId' in value))
+    .map((value) => value.uploadId);
+  const uniqueIds = [...new Set(ids)];
+  if (uniqueIds.length === 0) return { answers, uploadIds: [] as string[] };
+
+  const rowsById = new Map<string, Awaited<ReturnType<typeof uploadsRepo.findForClaim>>[number]>();
+  if (claimToken) {
+    const rows = await uploadsRepo.findForClaim(db, uniqueIds, hashBrowserToken(claimToken), reportId);
+    for (const row of rows) rowsById.set(row.id, row);
+  }
+  if (reportId && rowsById.size < uniqueIds.length) {
+    const rows = await uploadsRepo.findForReport(db, uniqueIds, reportId);
+    for (const row of rows) rowsById.set(row.id, row);
+  }
+  if (rowsById.size !== uniqueIds.length) throw AppError.forbidden('One or more photo uploads are not yours');
+
+  const output = { ...answers };
+  for (const field of schema.fields) {
+    if (field.type !== 'photo') continue;
+    const answer = answers[field.key];
+    if (!answer || typeof answer !== 'object' || !('uploadId' in answer)) continue;
+    const row = rowsById.get((answer as { uploadId: string }).uploadId);
+    if (!row) throw AppError.forbidden('One or more photo uploads are not yours');
+    output[field.key] = {
+      uploadId: row.id,
+      url: `/api/uploads/files/${row.filename}`,
+      width: row.width,
+      height: row.height,
+    };
+  }
+  return { answers: output, uploadIds: uniqueIds };
+}
+
 export interface CreateReportInput {
   reference: string;
   latitude: number;
@@ -30,6 +74,7 @@ export interface CreateReportInput {
   placeLabel?: string;
   turnstileToken?: string;
   browserTokenCookie: string | null;
+  uploadClaimToken?: string | null;
   ip: string;
 }
 
@@ -52,6 +97,7 @@ export async function createReport(
 
   const schema = incidentFormSchema.parse(incident.formSchema);
   const answers = validateAnswers(schema, input.answers);
+  const resolvedPhotos = await resolvePhotoAnswers(db, schema, answers, input.uploadClaimToken ?? null);
 
   const privateWkt = pointWkt(input.longitude, input.latitude);
   if (!(await incidentsRepo.geofenceAllows(db, incident.id, privateWkt)))
@@ -87,7 +133,7 @@ export async function createReport(
     const id = await reportsRepo.insert(tx, {
       incidentId: incident.id,
       schemaSnapshot: schema,
-      answers,
+      answers: resolvedPhotos.answers,
       placeLabel: input.placeLabel ?? null,
       privacy: input.privacy,
       publicPointWkt: pointWkt(publicPoint.longitude, publicPoint.latitude),
@@ -101,6 +147,16 @@ export async function createReport(
       expiresAt,
     });
     if (!id) throw new AppError(500, 'internal', 'Could not save report');
+    if (resolvedPhotos.uploadIds.length) {
+      const claimed = await uploadsRepo.claim(
+        tx,
+        resolvedPhotos.uploadIds,
+        hashBrowserToken(input.uploadClaimToken ?? ''),
+        id,
+      );
+      if (claimed.length !== resolvedPhotos.uploadIds.length)
+        throw AppError.forbidden('One or more photo uploads are no longer available');
+    }
     await reportsPrivateRepo.insertLocation(tx, id, privateWkt, input.placeLabel ?? null);
     await auditRepo.record(tx, {
       incidentId: incident.id,
@@ -180,6 +236,7 @@ export interface UpdateReportInput {
   longitude: number;
   confirmExact?: boolean;
   placeLabel?: string;
+  uploadClaimToken?: string | null;
 }
 
 export async function updateReport(reportId: string, token: string, input: UpdateReportInput) {
@@ -197,6 +254,13 @@ export async function updateReport(reportId: string, token: string, input: Updat
 
   const schema = incidentFormSchema.parse(row.formSchema);
   const answers = validateAnswers(schema, input.answers);
+  const resolvedPhotos = await resolvePhotoAnswers(
+    db,
+    schema,
+    answers,
+    input.uploadClaimToken ?? null,
+    reportId,
+  );
 
   const privateWkt = pointWkt(input.longitude, input.latitude);
   if (!(await incidentsRepo.geofenceAllows(db, row.incidentId, privateWkt)))
@@ -220,13 +284,15 @@ export async function updateReport(reportId: string, token: string, input: Updat
 
   const suspicious = movedMeters > 50_000 ? ['implausible_move'] : undefined;
   await reportsPrivateRepo.update(db, reportId, {
-    answers,
+    answers: resolvedPhotos.answers,
     privacy: input.privacy,
     publicPointWkt: pointWkt(publicPoint.longitude, publicPoint.latitude),
     radius,
     privatePointWkt: privateWkt,
     placeLabel: input.placeLabel ?? null,
     suspiciousReasons: suspicious,
+    uploadIds: resolvedPhotos.uploadIds,
+    uploadClaimHash: input.uploadClaimToken ? hashBrowserToken(input.uploadClaimToken) : undefined,
   });
   await auditRepo.record(db, {
     incidentId: row.incidentId,

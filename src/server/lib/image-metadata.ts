@@ -1,82 +1,50 @@
+import sharp from 'sharp';
+
+export const MAX_IMAGE_PIXELS = 40_000_000;
+export const MAX_IMAGE_WIDTH = 8_000;
+export const MAX_IMAGE_HEIGHT = 8_000;
+
+export interface SanitizedImage {
+  buffer: Buffer;
+  mimeType: 'image/webp';
+  extension: '.webp';
+  width: number;
+  height: number;
+}
+
 /**
- * Strip EXIF/metadata from image buffers.
- * Handles JPEG (removes APP1 marker) and WebP (removes EXIF chunk).
- * PNG has no standard EXIF.
+ * Decode an image and re-encode it without carrying any input metadata across.
+ * Sharp identifies the format from the bytes, so the browser MIME type is not trusted.
  */
-export function stripImageMetadata(buffer: Buffer, mimeType: string): Buffer {
-  if (mimeType === 'image/jpeg') {
-    return stripJpegExif(buffer);
+export async function sanitizeImage(input: Buffer): Promise<SanitizedImage> {
+  const image = sharp(input, {
+    failOn: 'error',
+    limitInputPixels: MAX_IMAGE_PIXELS,
+    sequentialRead: true,
+  });
+  const metadata = await image.metadata();
+  if (!metadata.format || !['jpeg', 'png', 'webp'].includes(metadata.format)) {
+    throw new Error('Unsupported image format');
   }
-  if (mimeType === 'image/webp') {
-    return stripWebpExif(buffer);
+  if (!metadata.width || !metadata.height) throw new Error('Image dimensions are unavailable');
+  if (metadata.width > MAX_IMAGE_WIDTH || metadata.height > MAX_IMAGE_HEIGHT) {
+    throw new Error('Image dimensions are too large');
   }
-  // PNG: metadata is in ancillary chunks, not standard EXIF; return as-is
-  return buffer;
-}
+  if (metadata.pages && metadata.pages > 1) throw new Error('Animated images are not supported');
 
-function stripJpegExif(buf: Buffer): Buffer {
-  // JPEG files start with SOI (0xFFD8), then markers
-  if (buf.length < 4 || buf[0] !== 0xff || buf[1] !== 0xd8) return buf;
-
-  const parts: Buffer[] = [];
-  let offset = 2; // skip SOI
-
-  while (offset < buf.length - 1) {
-    if (buf[offset] !== 0xff) break;
-    const marker = buf[offset + 1];
-
-    // SOI and EOI markers have no length
-    if (marker === 0xd8) { offset += 2; continue; }
-    if (marker === 0xd9) { parts.push(buf.subarray(offset)); return Buffer.concat(parts); }
-
-    // Read marker length (includes the 2 length bytes)
-    if (offset + 3 >= buf.length) break;
-    const high = buf[offset + 2] ?? 0;
-    const low = buf[offset + 3] ?? 0;
-    const segLen = high * 256 + low;
-
-    // Skip APP1 (EXIF) and APP2 (ICC) markers
-    if (marker === 0xe1 || marker === 0xe2) {
-      offset += 2 + segLen;
-      continue;
-    }
-
-    // Keep all other markers and data
-    parts.push(buf.subarray(offset, offset + 2 + segLen));
-    offset += 2 + segLen;
+  const { data, info } = await image
+    .rotate()
+    .webp({ quality: 85, effort: 4 })
+    .toBuffer({ resolveWithObject: true });
+  if (!info.width || !info.height || info.width * info.height > MAX_IMAGE_PIXELS) {
+    throw new Error('Image dimensions are too large');
   }
 
-  // Append any remaining data
-  if (offset < buf.length) {
-    parts.push(buf.subarray(offset));
-  }
-
-  return Buffer.concat(parts);
-}
-
-function stripWebpExif(buf: Buffer): Buffer {
-  // WebP: RIFF header, then chunks. EXIF is in 'EXIF' chunk.
-  if (buf.length < 12) return buf;
-  if (buf.subarray(0, 4).toString() !== 'RIFF') return buf;
-  if (buf.subarray(8, 12).toString() !== 'WEBP') return buf;
-
-  const parts: Buffer[] = [buf.subarray(0, 12)]; // RIFF header
-  let offset = 12;
-
-  while (offset + 8 <= buf.length) {
-    const chunkId = buf.subarray(offset, offset + 4).toString();
-    const chunkSize = buf.readUInt32LE(offset + 4);
-    const chunkEnd = offset + 8 + chunkSize + (chunkSize % 2); // pad to even
-
-    if (chunkId === 'EXIF' || chunkId === 'XMP ') {
-      // Skip EXIF and XMP chunks
-      offset = chunkEnd;
-      continue;
-    }
-
-    parts.push(buf.subarray(offset, Math.min(chunkEnd, buf.length)));
-    offset = chunkEnd;
-  }
-
-  return Buffer.concat(parts);
+  return {
+    buffer: data,
+    mimeType: 'image/webp',
+    extension: '.webp',
+    width: info.width,
+    height: info.height,
+  };
 }

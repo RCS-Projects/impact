@@ -61,7 +61,7 @@ export function ReportForm({
     setError('');
     try {
       const photoFields = fields.filter((f) => f.type === 'photo');
-      const photoAnswers: Record<string, { uploadId: string; url: string }> = {};
+      const photoAnswers: Record<string, { uploadId: string }> = {};
       for (const field of photoFields) {
         const fileInput = document.getElementById(`f-${field.key}`) as HTMLInputElement | null;
         const file = fileInput?.files?.[0];
@@ -73,11 +73,18 @@ export function ReportForm({
             const errData = (await uploadRes.json().catch(() => ({}))) as { error?: string };
             throw new Error(errData.error ?? `Failed to upload ${field.label}`);
           }
-          const uploadData = (await uploadRes.json()) as { id: string; url: string };
-          photoAnswers[field.key] = { uploadId: uploadData.id, url: uploadData.url };
+          const uploadData = (await uploadRes.json()) as { id: string };
+          photoAnswers[field.key] = { uploadId: uploadData.id };
         }
       }
       const answers = collectAnswers(fields, form);
+      if (mode === 'edit' && initial) {
+        for (const field of photoFields) {
+          const existing = initial.answers[field.key];
+          if (existing && typeof existing === 'object' && 'uploadId' in existing)
+            photoAnswers[field.key] ??= { uploadId: (existing as { uploadId: string }).uploadId };
+        }
+      }
       for (const [key, photo] of Object.entries(photoAnswers)) {
         answers[key] = photo;
       }

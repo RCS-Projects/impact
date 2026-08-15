@@ -1,3 +1,4 @@
+import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { handleApi } from '@/server/errors';
@@ -40,7 +41,10 @@ const updateInput = z.object({
 export const PUT = handleApi(
   async (request: NextRequest, { params }: { params: { id: string; token: string } }) => {
     const data = updateInput.parse(await request.json().catch(() => null));
-    await updateReport(params.id, params.token, data);
+    await updateReport(params.id, params.token, {
+      ...data,
+      uploadClaimToken: cookies().get('impact_upload_claim')?.value ?? null,
+    });
     return NextResponse.json({ ok: true }, { headers: noStore() });
   },
 );

@@ -28,6 +28,7 @@ export const POST = handleApi(
       placeLabel: data.placeLabel,
       turnstileToken: data.turnstileToken,
       browserTokenCookie: cookies().get('impact_browser_token')?.value ?? null,
+      uploadClaimToken: cookies().get('impact_upload_claim')?.value ?? null,
       ip: clientIp(request),
     });
     const response = NextResponse.json(
