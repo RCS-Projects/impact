@@ -21,7 +21,8 @@
     "db:reset": "tsx scripts/migrate.ts --reset",
     "prune:expired": "tsx scripts/prune-expired.ts",
     "cleanup": "tsx scripts/cleanup.ts",
-    "preflight": "tsx scripts/preflight.ts"
+    "preflight": "tsx scripts/preflight.ts",
+    "backup:restore:drill": "scripts/backup-restore-drill.sh"
   },
   "dependencies": {
     "bcryptjs": "2.4.3",

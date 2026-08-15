@@ -65,6 +65,10 @@ Verify after restore: `curl /api/ready`, confirm incident/report counts, and req
 known public photo URL. Perform a restore test before public launch and quarterly
 thereafter; never test by overwriting the live database or upload directory.
 
+For a disposable local drill, run `npm run backup:restore:drill`. It creates a
+temporary `impact_restore` database, restores the dump, checks core row counts and
+PostGIS, then removes the temporary database.
+
 ## Cleanup tasks
 
 Expired reports, orphaned upload rows/files, rate-limit events, and geocode cache
