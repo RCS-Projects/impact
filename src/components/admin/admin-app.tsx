@@ -110,7 +110,7 @@ export function AdminApp({ signedIn }: { signedIn: boolean }) {
     }
     setMessage(`Draft created: ${data.url}`);
     setReportingArea(null);
-    void refresh();
+    await refresh();
   }
 
   async function act(incidentId: string, action: 'publish' | 'close' | 'archive') {
@@ -123,7 +123,7 @@ export function AdminApp({ signedIn }: { signedIn: boolean }) {
       setMessage(data.error ?? `Could not ${action} incident`);
       return;
     }
-    void refresh();
+    await refresh();
   }
 
   if (!signedIn) {
