@@ -73,6 +73,10 @@ pipeline, SSE implementation, public map/report flows, and administrator flows.
 - Migrated the remaining React style attributes to named CSS classes. The
   production CSP no longer contains `style-src-attr 'unsafe-inline'`; a rebuilt
   Docker image was smoke-tested and served the strict policy.
+- Fixed CSP nonce propagation by forwarding the policy on the middleware
+  request. Verified on a single response that the CSP nonce exactly matches the
+  nonce on Next.js framework and hydration scripts, preventing blocked client
+  hydration.
 - Backup/restore drill completed against a disposable database: restored
   `5 incidents | 4 reports | 4 private locations | 0 uploads | 7 audit events`
   and PostGIS was available. PostgreSQL dump and upload-volume archive were
@@ -108,6 +112,9 @@ security headers. A browser-console smoke could not launch in this environment
 because the compatible Chromium headless-shell binary is unavailable; any
 visual blank-page report still needs confirmation in a real browser or
 deployment console.
+
+The live response now also carries matching CSP and script nonces on the same
+response, so the previously suspected hydration-blocking condition is cleared.
 
 The informational root page now uses per-request rendering instead of a
 year-long static cache, reducing the risk of a CDN serving HTML that references
