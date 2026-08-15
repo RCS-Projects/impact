@@ -27,7 +27,7 @@ export function findByLogin(db: postgres.Sql, login: string) {
     SELECT id, email, role, password_hash AS "passwordHash"
     FROM administrators
     WHERE email = ${login} OR split_part(email, '@', 1) = ${login}
-    ORDER BY created_at
+    ORDER BY (email = ${login}) DESC, created_at DESC
     LIMIT 1
   `.then((rows) => rows[0] ?? null);
 }

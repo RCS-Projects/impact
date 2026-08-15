@@ -23,6 +23,7 @@ COPY --from=build --chown=impact:impact /app/scripts ./scripts
 COPY --from=build --chown=impact:impact /app/src ./src
 COPY --from=build --chown=impact:impact /app/tsconfig.json ./tsconfig.json
 COPY --from=build --chown=impact:impact /app/next.config.mjs ./next.config.mjs
+RUN mkdir -p /app/data/uploads && chown -R impact:impact /app/data
 USER impact
 EXPOSE 3000
 CMD ["npm", "run", "start"]
