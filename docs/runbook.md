@@ -17,12 +17,18 @@ docker-compose exec app npm run db:seed          # first deploy only
 
 Production checklist:
 
-- `APP_NODE_ENV=production` (forces production runtime mode)
+- `APP_NODE_ENV=production` and `IMPACT_RUNTIME_MODE=production`
 - `DEVELOPMENT_TURNSTILE_BYPASS=false`, real Turnstile keys present
-- `ADMIN_BOOTSTRAP_SECRET` removed after first administrator setup
+- `ADMIN_BOOTSTRAP_EMAIL` and `ADMIN_BOOTSTRAP_SECRET` removed after first administrator setup
 - Strong, unique `POSTGRES_PASSWORD`, `SESSION_SECRET`, `IP_HASH_SECRET`
 - `UPLOAD_DIR` pointing to persistent volume (default `./data/uploads`)
 - Health endpoints: `/api/health` (liveness), `/api/ready` (DB check)
+
+The temporary development credential is intentionally `admin` / `admin` until the
+owner changes it. It must be replaced with a unique password of at least 16
+characters before public promotion, and the old credential must be tested as rejected.
+
+Keep `NOMINATIM_SEARCH_URL` server-side; it must not be a `NEXT_PUBLIC_*` variable.
 
 ## Updates
 
@@ -37,10 +43,12 @@ Migrations are additive and ordered; the app does not auto-migrate on boot.
 
 ## Backup and restore
 
-The only stateful service is PostgreSQL. Back up with a consistent dump:
+Both PostgreSQL and the upload volume are stateful and must be backed up together.
+Back up with a consistent dump and a filesystem archive:
 
 ```bash
 docker-compose exec db pg_dump -U impact -Fc impact > impact-$(date +%F).dump
+tar --xattrs --acls -czf uploads-$(date +%F).tar.gz data/uploads
 ```
 
 Automate with cron/systemd on the host and keep off-box copies. Restore:
@@ -48,21 +56,27 @@ Automate with cron/systemd on the host and keep off-box copies. Restore:
 ```bash
 docker-compose up -d db
 docker exec -i impact_db_1 pg_restore -U impact -d impact --clean --if-exists < impact-YYYY-MM-DD.dump
+tar --xattrs --acls -xzf uploads-YYYY-MM-DD.tar.gz -C .
 docker-compose restart app
 ```
 
-Verify after restore: `curl /api/ready` and confirm incident/report counts.
+Verify after restore: `curl /api/ready`, confirm incident/report counts, and request a
+known public photo URL. Perform a restore test before public launch and quarterly
+thereafter; never test by overwriting the live database or upload directory.
 
 ## Cleanup tasks
 
-Expired reports, rate-limit events, and geocode cache entries can be pruned:
+Expired reports, orphaned upload rows/files, rate-limit events, and geocode cache
+entries are pruned by one authoritative, idempotent command:
 
 ```bash
 # Run via cron or systemd timer (daily recommended)
-docker-compose exec app npx tsx scripts/cleanup.ts
+docker-compose exec -T app npm run cleanup
 ```
 
-To prune only expired reports: `docker-compose exec app npx tsx scripts/prune-expired.ts`
+It is safe to rerun after interruption. Capture the totals in the job log and alert
+on repeated failures. `scripts/prune-expired.ts` is a compatibility wrapper that
+delegates to the same command; schedule `cleanup`, not both scripts.
 
 ## Diagnostics
 
@@ -97,8 +111,32 @@ The map view subscribes to Server-Sent Events at `/api/incidents/[reference]/eve
 SSE broadcasts `report_created` and `report_updated` events. Falls back to 30-second
 polling if the SSE connection fails.
 
+The SSE bus is in-memory and therefore single-process. Run one app replica unless a
+shared PostgreSQL LISTEN/NOTIFY bus is deployed. At the reverse proxy, disable
+buffering for the events route, use an idle timeout longer than the 30-second
+heartbeat, and forward client-IP headers only from trusted proxy hops. Do not cache
+or compress the event stream.
+
 ## Data exports
 
 Incident reports can be exported via `/api/admin/incidents/[id]/export?format=csv` or
-`?format=json`. Exports are available from the incident editor admin page. Reports include
-all answers, coordinates, timestamps, and moderation status.
+`?format=json`. Ordinary exports contain public coordinates (and public polygon
+geometry) only. A separate admin-only `sensitive=true` request includes exact point
+coordinates, requires explicit confirmation, sends `no-store`, and records an audit
+event. Treat that download as sensitive and transfer it only through an approved
+secure channel.
+
+## Deployment smoke test
+
+After every release, verify these endpoints from outside the container:
+
+```bash
+curl -fsS https://impact.renfrewcountyscanner.com/api/health
+curl -fsS https://impact.renfrewcountyscanner.com/api/ready
+curl -fsS https://impact.renfrewcountyscanner.com/
+curl -fsS https://impact.renfrewcountyscanner.com/admin/login
+curl -fsS https://impact.renfrewcountyscanner.com/map/<known-reference>
+```
+
+Check that login pages do not expose bootstrap secrets, public responses do not
+contain private coordinates, and a known public photo remains readable after restart.
