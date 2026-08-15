@@ -226,6 +226,31 @@ a {
   flex: 1;
   min-height: 0;
 }
+.list-mode .map { display: none; }
+.report-list-panel {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+  padding: 1rem;
+  background: var(--bg);
+}
+.report-list-panel h2 { margin-bottom: 0.75rem; }
+.report-list-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  gap: 0.15rem;
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+  text-align: left;
+  color: var(--text);
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.report-list-item span { color: var(--text-dim); font-size: 0.85rem; }
 .map-wrap .maplibregl-map {
   position: absolute;
   inset: 0;

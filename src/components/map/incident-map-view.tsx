@@ -59,6 +59,7 @@ export function IncidentMapView(props: IncidentMapViewProps) {
   const [fieldFilters, setFieldFilters] = useState<Record<string, Set<string>>>({});
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [loadError, setLoadError] = useState('');
+  const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
   const fallbackPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -387,6 +388,9 @@ export function IncidentMapView(props: IncidentMapViewProps) {
           Filters
           {activeFilterCount > 0 && <span className="chip" aria-label={`${activeFilterCount} active filters`}>{activeFilterCount}</span>}
         </button>
+        <button type="button" className="button button-secondary button-sm" onClick={() => setViewMode(viewMode === 'map' ? 'list' : 'map')}>
+          {viewMode === 'map' ? 'List view' : 'Map view'}
+        </button>
         {props.incidentStatus === 'live' && (
           <a className="button button-sm topbar-cta" href={`/map/${props.reference}/report`}>
             Submit a Report
@@ -394,8 +398,20 @@ export function IncidentMapView(props: IncidentMapViewProps) {
         )}
       </header>
 
-      <div className="map-wrap">
+      <div className={`map-wrap ${viewMode === 'list' ? 'list-mode' : ''}`}>
         <div ref={container} className="map" aria-label="Interactive incident map" />
+        {viewMode === 'list' && (
+          <section className="report-list-panel" aria-label="Reports in current view">
+            <h2>Reports in view ({reports.length})</h2>
+            {reports.length === 0 && <p className="hint">No reports match the current filters.</p>}
+            {reports.map((report) => (
+              <button key={report.id} type="button" className="report-list-item" onClick={() => { setSelectedId(report.id); setViewMode('map'); }}>
+                <strong>{report.placeLabel ?? 'Reported location'}</strong>
+                <span>{STATUS_LABELS[report.status]} · {formatRelativeTime(report.createdAt)}</span>
+              </button>
+            ))}
+          </section>
+        )}
 
         {filtersOpen && (
           <aside className="panel filter-panel" aria-label="Map filters">
