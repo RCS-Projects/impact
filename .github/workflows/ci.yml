@@ -30,6 +30,8 @@ jobs:
       NOMINATIM_SEARCH_URL: http://127.0.0.1:9/nominatim/search
       IMPACT_RUNTIME_MODE: test
       DEVELOPMENT_TURNSTILE_BYPASS: true
+      ADMIN_BOOTSTRAP_EMAIL: admin@example.test
+      ADMIN_BOOTSTRAP_SECRET: ci-bootstrap-secret-ci-bootstrap-secret-ci
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -38,7 +40,30 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run db:migrate
+      - run: npm run db:seed
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+      - name: Start application
+        run: npm run start -- -p 3000 > /tmp/impact-next.log 2>&1 &
+      - name: Wait for application
+        run: |
+          for attempt in $(seq 1 30); do
+            curl --fail --silent http://127.0.0.1:3000/api/health && exit 0
+            sleep 1
+          done
+          cat /tmp/impact-next.log
+          exit 1
+      - name: Bootstrap browser-test administrator
+        run: |
+          curl --fail --silent --show-error -X POST http://127.0.0.1:3000/api/admin/setup \
+            -H 'content-type: application/json' \
+            --data '{"email":"admin@example.test","password":"ci-admin-password-1234","secret":"ci-bootstrap-secret-ci-bootstrap-secret-ci"}'
+      - run: npm run test:e2e
+        env:
+          E2E_BASE_URL: http://127.0.0.1:3000
+          E2E_ADMIN_LOGIN: admin
+          E2E_ADMIN_PASSWORD: ci-admin-password-1234
