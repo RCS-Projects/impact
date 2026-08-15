@@ -30,6 +30,8 @@ export const GET = handleApi(
         latitude: number;
         status: string;
         createdAt: string;
+        geometryType: string;
+        geometry: unknown;
         exactLongitude?: number | null;
         exactLatitude?: number | null;
       }[]
@@ -39,6 +41,8 @@ export const GET = handleApi(
         ST_X(r.public_coordinate::geometry) AS longitude,
         ST_Y(r.public_coordinate::geometry) AS latitude,
         r.status::text AS status, r.created_at::text AS "createdAt",
+        COALESCE(ST_GeometryType(r.report_geometry::geometry), 'ST_Point') AS "geometryType",
+        ST_AsGeoJSON(r.report_geometry::geometry)::jsonb AS geometry,
         ${sensitive ? db`ST_X(p.submitted_coordinate::geometry)` : db`NULL`} AS "exactLongitude",
         ${sensitive ? db`ST_Y(p.submitted_coordinate::geometry)` : db`NULL`} AS "exactLatitude"
       FROM reports r
@@ -63,12 +67,14 @@ export const GET = handleApi(
         for (const key of Object.keys(row.answers)) allKeys.add(key);
       }
       const answerKeys = [...allKeys].sort();
-      const header = ['id', 'status', 'createdAt', 'latitude', 'longitude', ...(sensitive ? ['exactLatitude', 'exactLongitude'] : []), 'privacy', 'placeLabel', ...answerKeys];
+      const header = ['id', 'status', 'createdAt', 'geometryType', 'geometry', 'latitude', 'longitude', ...(sensitive ? ['exactLatitude', 'exactLongitude'] : []), 'privacy', 'placeLabel', ...answerKeys];
       const csvRows = rows.map((row) => {
         const base = [
           row.id,
           row.status,
           row.createdAt,
+          row.geometryType.replace(/^ST_/, ''),
+          JSON.stringify(row.geometry ?? ''),
           String(row.latitude),
           String(row.longitude),
           ...(sensitive ? [String(row.exactLatitude ?? ''), String(row.exactLongitude ?? '')] : []),
