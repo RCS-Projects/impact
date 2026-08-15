@@ -144,6 +144,7 @@ Run the local/server preflight before starting a production deployment:
 
 ```bash
 npm run preflight
+npm run smoke
 ```
 
 It validates production environment requirements, PostGIS availability, and writable

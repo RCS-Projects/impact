@@ -22,6 +22,7 @@
     "prune:expired": "tsx scripts/prune-expired.ts",
     "cleanup": "tsx scripts/cleanup.ts",
     "preflight": "tsx scripts/preflight.ts",
+    "smoke": "tsx scripts/deployment-smoke.ts",
     "backup:restore:drill": "scripts/backup-restore-drill.sh"
   },
   "dependencies": {

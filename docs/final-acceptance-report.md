@@ -62,6 +62,9 @@ pipeline, SSE implementation, public map/report flows, and administrator flows.
   lint/type checking, and static generation.
 - Docker Compose app and database are healthy. `/api/health`, readiness, and
   `npm run preflight` succeeded.
+- `E2E_BASE_URL=http://192.168.120.7:3000 npm run smoke` passed health,
+  readiness, landing page, admin page, security headers, and unknown-incident
+  SSE checks.
 - Backup/restore drill completed against a disposable database: restored
   `5 incidents | 4 reports | 4 private locations | 0 uploads | 7 audit events`
   and PostGIS was available. PostgreSQL dump and upload-volume archive were
