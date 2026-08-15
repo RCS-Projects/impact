@@ -5,7 +5,7 @@ Date: 2026-08-15
 ## Scope and repository state
 
 The completion pass started at `e003c58b208b098544a825116791ea865ce397d1` and
-currently ends at `2326154` (`Add reproducible backup restore drill`). The
+currently ends at `8e13644` (`Expand browser and accessibility acceptance coverage`). The
 working tree is clean; changes are committed locally and have not been pushed.
 
 I inspected the application routes, services, repositories, schemas, migrations,
@@ -83,11 +83,13 @@ schema. Existing point reports remain compatible with the geometry model.
 
 ## Browser and viewport results
 
-The repository currently contains two Playwright flows. They were attempted in
-the Node 20 container, but the container lacked the Playwright headless-shell
-binary expected by the installed browser revision; therefore the browser run is
-recorded as **blocked**, not passed. Chromium/Firefox/WebKit matrix and Axe
-coverage still require a CI or development image with browser binaries.
+The Playwright suite now includes the public flow plus Axe accessibility smoke
+tests, configured for Chromium desktop/phone/tablet, Firefox desktop, and WebKit
+phone. They were attempted in the Node 20 container, but the container lacked
+the Playwright headless-shell binary expected by the installed browser revision;
+therefore the browser run is recorded as **blocked**, not passed. The configured
+matrix and Axe checks require a CI/development image with compatible browser
+binaries.
 
 ## Privacy evidence
 
