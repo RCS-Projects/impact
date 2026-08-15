@@ -20,6 +20,7 @@ interface TemplateOption {
   key: string;
   title: string;
 }
+interface DashboardStats { liveIncidents: number; flaggedReports: number; recentReports: number; pendingUploads: number }
 
 async function adminApi(path: string, body: unknown) {
   return fetch(path, {
@@ -35,12 +36,14 @@ export function AdminApp({ signedIn }: { signedIn: boolean }) {
   const [incidents, setIncidents] = useState<AdminIncident[]>([]);
   const [templates, setTemplates] = useState<TemplateOption[]>([]);
   const [reportingArea, setReportingArea] = useState<unknown | null>(null);
+  const [stats, setStats] = useState<DashboardStats | null>(null);
 
   const refresh = useCallback(async () => {
     const response = await fetch('/api/admin/incidents');
     if (!response.ok) return;
-    const data = (await response.json()) as { incidents: AdminIncident[] };
+    const data = (await response.json()) as { incidents: AdminIncident[]; stats: DashboardStats };
     setIncidents(data.incidents);
+    setStats(data.stats);
   }, []);
 
   const loadTemplates = useCallback(async () => {
@@ -169,6 +172,13 @@ export function AdminApp({ signedIn }: { signedIn: boolean }) {
       </div>
 
       {message && <p className="notice">{message}</p>}
+
+      {stats && <div className="grid-4" style={{ marginBottom: '1rem' }}>
+        <div className="card"><strong>{stats.liveIncidents}</strong><span className="hint"> live incidents</span></div>
+        <div className="card"><strong>{stats.flaggedReports}</strong><span className="hint"> flagged reports</span></div>
+        <div className="card"><strong>{stats.recentReports}</strong><span className="hint"> reports in the last hour</span></div>
+        <div className="card"><strong>{stats.pendingUploads}</strong><span className="hint"> pending uploads</span></div>
+      </div>}
 
       <section className="card">
         <h2>Create incident</h2>

@@ -579,6 +579,14 @@ table.data tr:last-child td {
   grid-template-columns: 1fr;
   gap: 0.6rem;
 }
+.grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.6rem;
+}
+@media (max-width: 700px) {
+  .grid-4 { grid-template-columns: repeat(2, 1fr); }
+}
 @media (min-width: 640px) {
   .grid-3 {
     grid-template-columns: 1fr 1fr 1fr;

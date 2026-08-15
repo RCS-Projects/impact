@@ -219,4 +219,8 @@ export function listForAdmin() {
   return incidentsRepo.listForAdmin(getSql());
 }
 
+export function dashboardStats() {
+  return incidentsRepo.dashboardStats(getSql());
+}
+
 export { PUBLIC_ID_PATTERN };

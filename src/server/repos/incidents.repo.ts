@@ -73,6 +73,21 @@ export function listForAdmin(db: postgres.Sql) {
   `;
 }
 
+export function dashboardStats(db: postgres.Sql) {
+  return db<{
+    liveIncidents: number;
+    flaggedReports: number;
+    recentReports: number;
+    pendingUploads: number;
+  }[]>`
+    SELECT
+      (SELECT count(*)::int FROM incidents WHERE status = 'live') AS "liveIncidents",
+      (SELECT count(*)::int FROM reports WHERE status = 'flagged') AS "flaggedReports",
+      (SELECT count(*)::int FROM reports WHERE created_at > now() - interval '1 hour') AS "recentReports",
+      (SELECT count(*)::int FROM uploads WHERE report_id IS NULL) AS "pendingUploads"
+  `.then((rows) => rows[0] ?? { liveIncidents: 0, flaggedReports: 0, recentReports: 0, pendingUploads: 0 });
+}
+
 export function create(
   db: postgres.Sql,
   incident: {

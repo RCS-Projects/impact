@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { handleApi } from '@/server/errors';
 import { noStore } from '@/server/http';
 import { requireAdmin, requireAdminRole } from '@/server/services/auth.service';
-import { createDraft, listForAdmin } from '@/server/services/incidents.service';
+import { createDraft, listForAdmin, dashboardStats } from '@/server/services/incidents.service';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,8 +22,8 @@ const createInput = z.object({
 
 export const GET = handleApi(async () => {
   await requireAdmin();
-  const incidents = await listForAdmin();
-  return NextResponse.json({ incidents }, { headers: noStore() });
+  const [incidents, stats] = await Promise.all([listForAdmin(), dashboardStats()]);
+  return NextResponse.json({ incidents, stats }, { headers: noStore() });
 });
 
 export const POST = handleApi(async (request: NextRequest) => {
