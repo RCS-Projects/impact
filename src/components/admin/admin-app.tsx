@@ -203,7 +203,7 @@ export function AdminApp({ signedIn }: { signedIn: boolean }) {
           </label>
           <label className="field">
             Template
-            <select name="templateKey" defaultValue={templates[0]?.key ?? 'storm-damage'}>
+            <select name="templateKey" defaultValue={templates.some((template) => template.key === 'storm-damage') ? 'storm-damage' : templates[0]?.key ?? 'storm-damage'}>
               {templates.map((t) => (
                 <option key={t.key} value={t.key}>{t.title}</option>
               ))}
