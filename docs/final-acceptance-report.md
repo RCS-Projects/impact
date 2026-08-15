@@ -4,10 +4,9 @@ Date: 2026-08-15
 
 ## Scope and repository state
 
-The completion pass started at `e003c58b208b098544a825116791ea865ce397d1`. The
-working tree contains the implementation changes described below; the ending
-commit is intentionally left to the repository owner because this workspace is
-not authorized to publish or push changes.
+The completion pass started at `e003c58b208b098544a825116791ea865ce397d1` and
+currently ends at `2326154` (`Add reproducible backup restore drill`). The
+working tree is clean; changes are committed locally and have not been pushed.
 
 I inspected the application routes, services, repositories, schemas, migrations,
 Docker configuration, CI workflow, package scripts, environment example,
@@ -67,6 +66,8 @@ pipeline, SSE implementation, public map/report flows, and administrator flows.
   `5 incidents | 4 reports | 4 private locations | 0 uploads | 7 audit events`
   and PostGIS was available. PostgreSQL dump and upload-volume archive were
   created without touching production.
+- Added `npm run backup:restore:drill`, an idempotent disposable-database drill
+  that performs the same verification locally.
 - Formatting check and `git diff --check` pass.
 
 ## Database and backward compatibility
