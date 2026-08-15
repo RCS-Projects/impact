@@ -115,7 +115,7 @@ export function PolygonEditor({
 
   useEffect(() => {
     const map = mapRef.current;
-    if (map) updateSource(map, coords);
+    if (map && map.isStyleLoaded()) updateSource(map, coords);
   }, [coords, updateSource]);
 
   function clear() {
