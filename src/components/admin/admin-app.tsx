@@ -126,6 +126,14 @@ export function AdminApp({ signedIn }: { signedIn: boolean }) {
     await refresh();
   }
 
+  async function duplicateIncident(incidentId: string) {
+    if (!window.confirm('Create a new draft copy of this incident?')) return;
+    const response = await adminApi(`/api/admin/incidents/${incidentId}/duplicate`, {});
+    const data = (await response.json().catch(() => ({}))) as { error?: string; id?: string };
+    if (!response.ok || !data.id) { setMessage(data.error ?? 'Could not duplicate incident'); return; }
+    router.push(`/admin/incidents/${data.id}`);
+  }
+
   if (!signedIn) {
     return (
       <main className="shell">
@@ -317,6 +325,10 @@ export function AdminApp({ signedIn }: { signedIn: boolean }) {
                         >
                           Edit
                         </a>
+                        <a className="button button-secondary button-sm" href={`/admin/moderation?incidentId=${incident.id}`}>Moderate</a>
+                        {incident.status !== 'draft' && <a className="button button-secondary button-sm" href={url} target="_blank" rel="noreferrer">View map</a>}
+                        <a className="button button-secondary button-sm" href={`/api/admin/incidents/${incident.id}/export?format=csv`} target="_blank" rel="noreferrer">Export</a>
+                        <button type="button" className="button button-secondary button-sm" onClick={() => void duplicateIncident(incident.id)}>Duplicate</button>
                         {incident.status === 'draft' && (
                           <button
                             type="button"
