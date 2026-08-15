@@ -247,6 +247,7 @@ export interface UpdateReportInput {
   confirmExact?: boolean;
   placeLabel?: string;
   uploadClaimToken?: string | null;
+  geometry?: unknown;
 }
 
 export async function updateReport(reportId: string, token: string, input: UpdateReportInput) {
@@ -263,6 +264,9 @@ export async function updateReport(reportId: string, token: string, input: Updat
     );
 
   const schema = incidentFormSchema.parse(row.formSchema);
+  const geometry = reportGeometrySchema.parse(input.geometry ?? row.reportGeometry ?? { type: 'Point', coordinates: [input.longitude, input.latitude] });
+  if (row.reportGeometryMode === 'point' && geometry.type !== 'Point') throw AppError.badRequest('This incident accepts point reports only');
+  if (row.reportGeometryMode === 'polygon' && geometry.type !== 'Polygon') throw AppError.badRequest('This incident accepts polygon reports only');
   const answers = validateAnswers(schema, input.answers);
   const resolvedPhotos = await resolvePhotoAnswers(
     db,
@@ -273,8 +277,12 @@ export async function updateReport(reportId: string, token: string, input: Updat
   );
 
   const privateWkt = pointWkt(input.longitude, input.latitude);
-  if (!(await incidentsRepo.geofenceAllows(db, row.incidentId, privateWkt)))
+  if (geometry.type === 'Polygon') {
+    if (!(await incidentsRepo.geofenceAllowsGeometry(db, row.incidentId, JSON.stringify(geometry))))
+      throw AppError.unprocessable('That area is invalid or outside this incident’s reporting area.');
+  } else if (!(await incidentsRepo.geofenceAllows(db, row.incidentId, privateWkt))) {
     throw AppError.unprocessable(OUTSIDE_AREA_MESSAGE);
+  }
 
   const movedMeters = distanceMeters(row.latitude, row.longitude, input.latitude, input.longitude);
   const locationChanged = movedMeters > 1;
@@ -303,6 +311,7 @@ export async function updateReport(reportId: string, token: string, input: Updat
     suspiciousReasons: suspicious,
     uploadIds: resolvedPhotos.uploadIds,
     uploadClaimHash: input.uploadClaimToken ? hashBrowserToken(input.uploadClaimToken) : undefined,
+    reportGeometryGeoJson: JSON.stringify(geometry),
   });
   await auditRepo.record(db, {
     incidentId: row.incidentId,

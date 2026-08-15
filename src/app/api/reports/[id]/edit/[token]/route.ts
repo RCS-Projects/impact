@@ -22,7 +22,9 @@ export const GET = handleApi(
           status: report.incidentStatus,
           reference: report.reference,
           reportingArea: report.reportingArea,
+          reportGeometryMode: report.reportGeometryMode,
         },
+        geometry: report.reportGeometry,
       },
       { headers: noStore() },
     );
@@ -36,6 +38,7 @@ const updateInput = z.object({
   longitude: z.number().min(-142).max(-52),
   confirmExact: z.boolean().optional(),
   placeLabel: z.string().max(120).optional(),
+  geometry: z.unknown().optional(),
 });
 
 export const PUT = handleApi(

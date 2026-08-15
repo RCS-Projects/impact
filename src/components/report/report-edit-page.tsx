@@ -15,7 +15,9 @@ interface EditPayload {
     status: string;
     reference: string;
     reportingArea: unknown | null;
+    reportGeometryMode: 'point' | 'polygon' | 'point_or_polygon';
   };
+  geometry?: unknown;
 }
 
 export function ReportEditPage({ reportId, token }: { reportId: string; token: string }) {
@@ -85,6 +87,7 @@ export function ReportEditPage({ reportId, token }: { reportId: string; token: s
                 longitude: payload.longitude,
                 placeLabel: payload.placeLabel,
               }}
+              geometryMode={payload.incident.reportGeometryMode}
             />
           )}
           <div style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid var(--border)' }}>

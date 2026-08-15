@@ -17,6 +17,8 @@ export interface EditableReportRow {
   incidentTitle: string;
   reference: string;
   reportingArea: unknown | null;
+  reportGeometryMode: 'point' | 'polygon' | 'point_or_polygon';
+  reportGeometry: unknown | null;
 }
 
 export function insertLocation(
@@ -44,6 +46,8 @@ export function getForEdit(db: postgres.Sql, reportId: string) {
       i.status::text AS "incidentStatus", i.title AS "incidentTitle",
       i.canonical_slug || '-' || i.public_id AS reference,
       CASE WHEN i.reporting_area IS NULL THEN NULL ELSE ST_AsGeoJSON(i.reporting_area::geometry)::jsonb END AS "reportingArea"
+      , i.report_geometry_mode AS "reportGeometryMode",
+      ST_AsGeoJSON(r.report_geometry::geometry)::jsonb AS "reportGeometry"
     FROM reports r
     JOIN report_private_locations p ON p.report_id = r.id
     JOIN incidents i ON i.id = r.incident_id
@@ -66,6 +70,7 @@ export function update(
     uploadClaimHash?: string;
     status?: string;
     suspiciousReasons?: string[];
+    reportGeometryGeoJson?: string;
   },
 ) {
   return db.begin(async (tx) => {
@@ -80,6 +85,7 @@ export function update(
       sets.push(
         tx`suspicious_reasons = suspicious_reasons || ${tx.json(update.suspiciousReasons as never)}`,
       );
+    if (update.reportGeometryGeoJson) sets.push(tx`report_geometry = ST_SetSRID(ST_GeomFromGeoJSON(${update.reportGeometryGeoJson}), 4326)::geography`);
     sets.push(tx`updated_at = now()`);
     const setClause = sets.reduce((acc, fragment) => tx`${acc}, ${fragment}`);
     await tx`UPDATE reports SET ${setClause} WHERE id = ${reportId}`;
