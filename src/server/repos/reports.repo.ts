@@ -79,7 +79,7 @@ export function queryPublic(
     SELECT id, answers, public_place_label AS "placeLabel", location_privacy::text AS privacy,
       ST_X(public_coordinate::geometry) AS longitude, ST_Y(public_coordinate::geometry) AS latitude,
       privacy_radius_meters::float AS radius, status::text AS status, created_at::text AS "createdAt",
-      COALESCE(ST_GeometryType(report_geometry), 'ST_Point')::text AS "geometryType",
+      COALESCE(ST_GeometryType(report_geometry::geometry), 'ST_Point')::text AS "geometryType",
       ST_AsGeoJSON(report_geometry::geometry)::jsonb AS geometry
     FROM reports
     WHERE incident_id = ${incidentId}
