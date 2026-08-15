@@ -48,6 +48,7 @@ export function ModerationApp() {
   const [total, setTotal] = useState(0);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [note, setNote] = useState('');
+  const [selectedReport, setSelectedReport] = useState<QueueReport | null>(null);
   const limit = 25;
 
   const load = useCallback(async () => {
@@ -66,6 +67,7 @@ export function ModerationApp() {
     setTotal(data.total);
     setError('');
     setSelected(new Set());
+    setSelectedReport(null);
   }, [incidentId, status, page]);
 
   useEffect(() => {
@@ -271,6 +273,9 @@ export function ModerationApp() {
                 </td>
                 <td>
                   <div className="buttons" style={{ marginTop: 0 }}>
+                    <button type="button" className="button button-secondary button-sm" onClick={() => setSelectedReport(report)}>
+                      Details
+                    </button>
                     {ACTIONS.map((action) => (
                       <button
                         key={action.action}
@@ -295,6 +300,24 @@ export function ModerationApp() {
           </tbody>
         </table>
       </div>
+
+      {selectedReport && (
+        <aside className="moderation-detail" aria-label="Selected report details">
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '.75rem', alignItems: 'center' }}>
+            <h2>Report details</h2>
+            <button type="button" className="button button-secondary button-sm" onClick={() => setSelectedReport(null)}>Close</button>
+          </div>
+          <p><strong>{selectedReport.incidentTitle}</strong> · {formatRelativeTime(selectedReport.createdAt)}</p>
+          <p className="hint">{selectedReport.placeLabel ?? 'No public place label'} · Privacy: {selectedReport.privacy}</p>
+          {selectedReport.suspiciousReasons.length > 0 && <p>{selectedReport.suspiciousReasons.map((reason) => REASON_LABELS[reason] ?? reason).join(', ')}</p>}
+          <dl>
+            {Object.entries(selectedReport.answers).map(([key, value]) => <div key={key}><dt className="hint">{key.replaceAll('_', ' ')}</dt><dd>{Array.isArray(value) ? value.join(', ') : typeof value === 'object' ? '[photo or structured answer]' : String(value)}</dd></div>)}
+          </dl>
+          <div className="buttons">
+            {ACTIONS.map((action) => <button key={action.action} type="button" className={`button button-sm ${action.className ?? 'button-secondary'}`} onClick={() => { void act(selectedReport.id, action.action); setSelectedReport(null); }}>{action.label}</button>)}
+          </div>
+        </aside>
+      )}
 
       {totalPages > 1 && (
         <div className="buttons" style={{ marginTop: '0.6rem', justifyContent: 'center' }}>
