@@ -5,7 +5,7 @@ Date: 2026-08-15
 ## Scope and repository state
 
 The completion pass started at `e003c58b208b098544a825116791ea865ce397d1` and
-currently ends at `8e13644` (`Expand browser and accessibility acceptance coverage`). The
+currently ends at `0ed55a4` (`Add deployment smoke validation`). The
 working tree is clean; changes are committed locally and have not been pushed.
 
 I inspected the application routes, services, repositories, schemas, migrations,
