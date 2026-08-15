@@ -109,6 +109,11 @@ because the compatible Chromium headless-shell binary is unavailable; any
 visual blank-page report still needs confirmation in a real browser or
 deployment console.
 
+The informational root page now uses per-request rendering instead of a
+year-long static cache, reducing the risk of a CDN serving HTML that references
+assets from an older deployment. This change requires the production image to
+be deployed before its cache behavior changes at the live site.
+
 ## Privacy evidence
 
 The passing integration assertions verify that approximate reports return a

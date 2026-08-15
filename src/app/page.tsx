@@ -1,4 +1,6 @@
-export const dynamic = 'force-static';
+// Render the shell per request so a deployment cannot leave a year-long CDN
+// copy referencing assets from an older build.
+export const dynamic = 'force-dynamic';
 
 export default function LandingPage() {
   return (
