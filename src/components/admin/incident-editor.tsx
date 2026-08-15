@@ -45,6 +45,7 @@ export function IncidentEditor({ incidentId }: { incidentId: string }) {
   const [message, setMessage] = useState('');
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const [areaJsonError, setAreaJsonError] = useState('');
   const lockedKeysRef = useRef<Set<string>>(new Set());
 
   const load = useCallback(async () => {
@@ -70,7 +71,7 @@ export function IncidentEditor({ incidentId }: { incidentId: string }) {
   }
 
   async function save() {
-    if (!incident || !dirty) return;
+    if (!incident || !dirty || areaJsonError) return;
     setSaving(true);
     setMessage('');
     const body = {
@@ -251,6 +252,7 @@ export function IncidentEditor({ incidentId }: { incidentId: string }) {
                   : null
               }
               onChange={(coords) => {
+                setAreaJsonError('');
                 if (!coords || coords.length < 3) {
                   updateField('reportingArea', null);
                 } else {
@@ -263,19 +265,22 @@ export function IncidentEditor({ incidentId }: { incidentId: string }) {
               onChange={(e) => {
                 const raw = e.target.value.trim();
                 if (!raw) {
+                  setAreaJsonError('');
                   updateField('reportingArea', null);
                   return;
                 }
                 try {
+                  setAreaJsonError('');
                   updateField('reportingArea', JSON.parse(raw));
                 } catch {
-                  // ignore invalid JSON while typing
+                  setAreaJsonError('Enter valid GeoJSON before saving.');
                 }
               }}
               rows={4}
               placeholder='{"type":"Polygon","coordinates":[[...]]}'
               style={{ marginTop: '0.3rem' }}
             />
+            {areaJsonError && <p className="notice notice-error">{areaJsonError}</p>}
           </label>
         </div>
       </section>

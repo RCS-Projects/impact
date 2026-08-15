@@ -82,6 +82,7 @@ export function ModerationApp() {
   }, []);
 
   async function act(reportId: string, action: string) {
+    if ((action === 'reject' || action === 'remove') && !window.confirm(`${action === 'remove' ? 'Remove' : 'Reject'} this report? This is a destructive moderation action.`)) return;
     const response = await fetch(`/api/admin/reports/${reportId}/status`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-csrf-token': getCsrfToken() },
@@ -98,6 +99,7 @@ export function ModerationApp() {
 
   async function batchAct(action: string) {
     if (selected.size === 0) return;
+    if ((action === 'reject' || action === 'remove') && !window.confirm(`${action === 'remove' ? 'Remove' : 'Reject'} ${selected.size} selected reports?`)) return;
     const response = await fetch('/api/admin/reports/batch-status', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-csrf-token': getCsrfToken() },
@@ -255,7 +257,15 @@ export function ModerationApp() {
                   {Object.entries(report.answers).map(([key, value]) => (
                     <div key={key}>
                       <span className="hint">{key.replaceAll('_', ' ')}:</span>{' '}
-                      {Array.isArray(value) ? value.join(', ') : String(value)}
+                      {value && typeof value === 'object' && 'url' in value ? (
+                        <img
+                          src={(value as { url: string }).url}
+                          alt="Uploaded report photo"
+                          width={(value as { width?: number }).width}
+                          height={(value as { height?: number }).height}
+                          style={{ maxWidth: 180, maxHeight: 120, objectFit: 'contain', verticalAlign: 'middle' }}
+                        />
+                      ) : Array.isArray(value) ? value.join(', ') : String(value)}
                     </div>
                   ))}
                 </td>

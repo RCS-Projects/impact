@@ -119,8 +119,8 @@ export function ReportForm({
       }
       if (mode === 'create') setSuccess({ editUrl: data.editUrl, flagged: data.flagged ?? false });
       else setSuccess({ flagged: false });
-    } catch {
-      setError('Network error. Please try again.');
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Could not save the report. Please try again.');
     } finally {
       setSubmitting(false);
     }
