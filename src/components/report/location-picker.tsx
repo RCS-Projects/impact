@@ -23,6 +23,7 @@ export function LocationPicker({
   const [results, setResults] = useState<GeocodeResult[]>([]);
   const [searchState, setSearchState] = useState<'idle' | 'searching' | 'error'>('idle');
   const [searchError, setSearchError] = useState('');
+  const [mapReady, setMapReady] = useState(false);
 
   useEffect(() => {
     if (!container.current || mapRef.current) return;
@@ -36,6 +37,7 @@ export function LocationPicker({
     map.addControl(new maplibregl.NavigationControl(), 'top-left');
 
     map.on('load', () => {
+      setMapReady(true);
       if (reportingArea) {
         map.addSource('reporting-area', {
           type: 'geojson',
@@ -207,6 +209,7 @@ export function LocationPicker({
       <div
         ref={container}
         className="picker-map"
+        data-map-ready={mapReady ? 'true' : 'false'}
         role="img"
         aria-label="Click or drag the marker to choose the report location"
       />

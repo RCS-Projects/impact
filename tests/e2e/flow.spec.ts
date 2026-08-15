@@ -39,7 +39,7 @@ test.describe('public reporting loop', () => {
     expect(urlCell).toBeTruthy();
 
     await page.goto(`${urlCell}/report`);
-    await page.waitForTimeout(1000);
+    await page.waitForSelector('.picker-map[data-map-ready="true"]', { timeout: 15000 });
     await page.locator('.picker-map').click({ position: { x: 200, y: 170 } });
     await expect(page.locator('button:has-text("Continue")').first()).toBeEnabled();
     await page.click('button:has-text("Continue")');
