@@ -120,6 +120,14 @@ export function IncidentEditor({ incidentId }: { incidentId: string }) {
     void load();
   }
 
+  async function duplicateIncident() {
+    if (!window.confirm('Create a new draft copy of this incident, including its form and map settings?')) return;
+    const response = await adminApi(`/api/admin/incidents/${incidentId}/duplicate`, 'POST', {});
+    const data = (await response.json().catch(() => ({}))) as { error?: string; id?: string };
+    if (!response.ok || !data.id) { setMessage(data.error ?? 'Could not duplicate incident'); return; }
+    router.push(`/admin/incidents/${data.id}`);
+  }
+
   async function downloadSensitive(format: 'csv' | 'json') {
     if (!window.confirm('Sensitive export includes exact submitted locations. Download only for secure handling?')) return;
     const response = await fetch(`/api/admin/incidents/${incidentId}/export?format=${format}&sensitive=true`, {
@@ -179,6 +187,7 @@ export function IncidentEditor({ incidentId }: { incidentId: string }) {
               Archive
             </button>
           )}
+          <button type="button" className="button button-secondary button-sm" onClick={() => void duplicateIncident()}>Duplicate</button>
           <button type="button" className="button button-secondary button-sm" onClick={() => {
             if (dirty && !window.confirm('You have unsaved changes. Leave without saving?')) return;
             router.push('/admin');

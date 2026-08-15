@@ -245,3 +245,14 @@ export function reportCount(db: postgres.Sql, incidentId: string) {
     SELECT count(*)::int AS count FROM reports WHERE incident_id = ${incidentId}
   `.then((rows) => rows[0]?.count ?? 0);
 }
+
+export function duplicate(db: postgres.Sql, id: string, publicId: string, slug: string) {
+  return db<{ id: string; slug: string; publicId: string }[]>`
+    INSERT INTO incidents (public_id, canonical_slug, title, description, form_schema, display_settings,
+      initial_center, initial_zoom, reporting_area, report_expiry_days, report_geometry_mode)
+    SELECT ${publicId}, ${slug}, title || ' (copy)', description, form_schema, display_settings,
+      initial_center, initial_zoom, reporting_area, report_expiry_days, report_geometry_mode
+    FROM incidents WHERE id = ${id}
+    RETURNING id, canonical_slug AS slug, public_id AS "publicId"
+  `.then((rows) => rows[0] ?? null);
+}

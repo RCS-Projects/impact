@@ -229,4 +229,14 @@ export function dashboardStats() {
   return incidentsRepo.dashboardStats(getSql());
 }
 
+export async function duplicate(incidentId: string, admin: AdminSession) {
+  const db = getSql();
+  const source = await incidentsRepo.findByIdForAdmin(db, incidentId);
+  if (!source) throw AppError.notFound('Incident not found');
+  const row = await incidentsRepo.duplicate(db, incidentId, newPublicId(), slugify(`${source.title} copy`));
+  if (!row) throw new AppError(500, 'internal', 'Could not duplicate incident');
+  await auditRepo.record(db, { incidentId: row.id, actorType: 'admin', actorId: admin.id, eventType: 'incident_duplicated', metadata: { sourceIncidentId: incidentId } });
+  return { id: row.id, url: publicUrl(row) };
+}
+
 export { PUBLIC_ID_PATTERN };
