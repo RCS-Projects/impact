@@ -68,6 +68,10 @@ pipeline, SSE implementation, public map/report flows, and administrator flows.
   created without touching production.
 - Added `npm run backup:restore:drill`, an idempotent disposable-database drill
   that performs the same verification locally.
+- Expanded Playwright configuration to Chromium desktop/phone/tablet,
+  Firefox desktop, and WebKit phone projects, and added Axe accessibility smoke
+  tests. Execution remains blocked here by unavailable compatible browser
+  binaries, so these projects fail loudly rather than being skipped.
 - Formatting check and `git diff --check` pass.
 
 ## Database and backward compatibility
