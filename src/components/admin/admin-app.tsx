@@ -36,6 +36,7 @@ export function AdminApp({ signedIn }: { signedIn: boolean }) {
   const [incidents, setIncidents] = useState<AdminIncident[]>([]);
   const [templates, setTemplates] = useState<TemplateOption[]>([]);
   const [reportingArea, setReportingArea] = useState<unknown | null>(null);
+  const [reportingAreaError, setReportingAreaError] = useState('');
   const [stats, setStats] = useState<DashboardStats | null>(null);
 
   const refresh = useCallback(async () => {
@@ -238,6 +239,7 @@ export function AdminApp({ signedIn }: { signedIn: boolean }) {
                   : null
               }
               onChange={(coords) => {
+                setReportingAreaError('');
                 if (!coords || coords.length < 3) {
                   setReportingArea(null);
                 } else {
@@ -250,14 +252,15 @@ export function AdminApp({ signedIn }: { signedIn: boolean }) {
               onChange={(e) => {
                 const raw = e.target.value.trim();
                 if (!raw) { setReportingArea(null); return; }
-                try { setReportingArea(JSON.parse(raw)); } catch { /* ignore */ }
+                try { setReportingAreaError(''); setReportingArea(JSON.parse(raw)); } catch { setReportingAreaError('Enter valid GeoJSON before creating the incident.'); }
               }}
               rows={4}
               placeholder='{"type":"Polygon","coordinates":[[...]]}'
               style={{ marginTop: '0.3rem' }}
             />
+            {reportingAreaError && <p className="notice notice-error" role="alert">{reportingAreaError}</p>}
           </label>
-          <button className="button">Create draft</button>
+          <button className="button" disabled={Boolean(reportingAreaError)}>Create draft</button>
         </form>
       </section>
 
