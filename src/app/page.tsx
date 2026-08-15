@@ -15,7 +15,7 @@ export default function LandingPage() {
         Reports are crowdsourced and may not be independently verified. Impact Maps are not an
         official emergency alerting system. For emergencies, call 911.
       </p>
-      <section className="card" style={{ marginTop: '1.5rem' }}>
+      <section className="card card-spaced">
         <h2>Privacy first</h2>
         <p>
           You can publish an exact location or use an approximate pin. Approximate reports hide the

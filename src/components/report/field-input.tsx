@@ -195,7 +195,7 @@ export function FieldInput({ field, defaultValue }: { field: FieldView; defaultV
               alt={field.label}
               width={existing.width}
               height={existing.height}
-              style={{ maxWidth: 200, maxHeight: 200, borderRadius: 4, display: 'block', marginBottom: '0.3rem' }}
+              className="photo-preview"
             />
           )}
           <input id={`f-${field.key}`} name={field.key} type="file" accept="image/jpeg,image/png,image/webp" />

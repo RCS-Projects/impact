@@ -164,12 +164,12 @@ export function AdminApp({
 
   return (
     <main className="shell">
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-        <div style={{ flex: 1 }}>
+      <div className="page-header">
+        <div className="page-header-main">
           <p className="eyebrow">Administration</p>
           <h1 className="page-title">Incident maps</h1>
         </div>
-        <div className="buttons" style={{ marginTop: 0 }}>
+        <div className="page-actions">
           <a className="button button-secondary button-sm" href="/admin/templates">
             Templates
           </a>
@@ -190,7 +190,7 @@ export function AdminApp({
 
       {message && <p className="notice">{message}</p>}
 
-      {stats && <div className="grid-4" style={{ marginBottom: '1rem' }}>
+      {stats && <div className="grid-4 card-spaced">
         <div className="card"><strong>{stats.liveIncidents}</strong><span className="hint"> live incidents</span></div>
         <div className="card"><strong>{stats.flaggedReports}</strong><span className="hint"> flagged reports</span></div>
         <div className="card"><strong>{stats.recentReports}</strong><span className="hint"> reports in the last hour</span></div>

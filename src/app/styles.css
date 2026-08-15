@@ -552,6 +552,19 @@ table.data tr:last-child td {
   padding: 1rem;
   margin-bottom: 1rem;
 }
+.page-header { display:flex; align-items:center; gap:1rem; flex-wrap:wrap; }
+.page-header-main { flex:1; min-width:12rem; }
+.page-actions { display:flex; gap:.75rem; flex-wrap:wrap; align-items:center; }
+.stack { display:flex; flex-direction:column; gap:.6rem; }
+.card-spaced { margin-top:1.5rem; }
+.photo-preview { max-width:200px; max-height:200px; border-radius:4px; display:block; margin-bottom:.3rem; object-fit:contain; }
+.admin-shell { max-width:1100px; }
+@media (max-width:700px) {
+  .page-header { align-items:flex-start; }
+  .page-actions { width:100%; gap:.5rem; }
+  .page-actions > * { flex:1 1 auto; }
+  .admin-shell { padding-left:.75rem; padding-right:.75rem; }
+}
 .card h2 {
   font-size: 1.05rem;
   margin-bottom: 0.75rem;

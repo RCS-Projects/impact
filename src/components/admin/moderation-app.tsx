@@ -152,9 +152,9 @@ export function ModerationApp() {
   const totalPages = Math.ceil(total / limit);
 
   return (
-    <main className="shell" style={{ maxWidth: 1100 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-        <div style={{ flex: 1 }}>
+    <main className="shell admin-shell">
+      <div className="page-header">
+        <div className="page-header-main">
           <p className="eyebrow">Administration</p>
           <h1 className="page-title">Moderation queue</h1>
         </div>
@@ -291,7 +291,7 @@ export function ModerationApp() {
                   ))}
                 </td>
                 <td>
-                  <div className="buttons" style={{ marginTop: 0 }}>
+        <div className="page-actions">
                     <button type="button" className="button button-secondary button-sm" onClick={() => setSelectedReport(report)}>
                       Details
                     </button>
