@@ -2,7 +2,7 @@ import postgres from 'postgres';
 import { unlink } from 'node:fs/promises';
 import path from 'node:path';
 
-async function main() {
+export async function runCleanup() {
   const databaseUrl = process.env.DATABASE_URL;
   if (!databaseUrl) {
     console.error('DATABASE_URL is required');
@@ -58,4 +58,4 @@ async function main() {
   }
 }
 
-void main();
+if (import.meta.url === `file://${process.argv[1]}`) void runCleanup();
