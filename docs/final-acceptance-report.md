@@ -5,7 +5,7 @@ Date: 2026-08-15
 ## Scope and repository state
 
 The completion pass started at `e003c58b208b098544a825116791ea865ce397d1` and
-currently ends at `00f960f` (`Remove inline styles and tighten CSP`). The
+currently ends at `a9d1ab3` (`Harden public report input and finish CSP cleanup`). The
 working tree is clean; changes are committed locally and have not been pushed.
 
 I inspected the application routes, services, repositories, schemas, migrations,
