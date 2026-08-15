@@ -59,13 +59,14 @@ export function ReportForm({
   const [step, setStep] = useState(0);
   const [uploadingPhoto, setUploadingPhoto] = useState<string | null>(null);
   const [geometry, setGeometry] = useState<ReportGeometry | null>(null);
+  const [geometryKind, setGeometryKind] = useState<'point' | 'polygon'>(geometryMode === 'polygon' ? 'polygon' : 'point');
   const formRef = useRef<HTMLFormElement>(null);
 
   const needsExactConfirmation =
     mode === 'edit' && initial?.privacy === 'approximate' && privacy === 'exact';
 
   async function handleSubmit(form: FormData) {
-    if ((geometryMode === 'point' && !point) || (geometryMode !== 'point' && !geometry) || submitting) return;
+    if ((geometryKind === 'point' && !point) || (geometryKind === 'polygon' && !geometry) || submitting) return;
     setSubmitting(true);
     setError('');
     try {
@@ -102,7 +103,7 @@ export function ReportForm({
       const body = {
         latitude: point?.latitude ?? center[1],
         longitude: point?.longitude ?? center[0],
-        ...(geometry ? { geometry } : {}),
+        ...(geometryKind === 'polygon' && geometry ? { geometry } : {}),
         privacy,
         answers,
         placeLabel: point?.placeLabel,
@@ -230,16 +231,17 @@ export function ReportForm({
       </ol>
 
       {step === 0 && <>
-        {geometryMode === 'point' ? <LocationPicker
+        {geometryMode === 'point_or_polygon' && <fieldset className="field geometry-choice"><legend>What are you reporting?</legend><label className="privacy-card"><input type="radio" name="geometry-kind" checked={geometryKind === 'point'} onChange={() => { setGeometryKind('point'); setGeometry(null); }} /> <strong>Mark one location</strong><span>Use a pin for one specific place.</span></label><label className="privacy-card"><input type="radio" name="geometry-kind" checked={geometryKind === 'polygon'} onChange={() => { setGeometryKind('polygon'); setPoint(null); }} /> <strong>Draw an area</strong><span>Draw the public area you searched or are describing.</span></label></fieldset>}
+        {geometryKind === 'point' ? <LocationPicker
           center={center}
           reportingArea={reportingArea}
           value={point}
           onChange={setPoint}
         /> : <ReportGeometryPicker center={center} value={geometry} onChange={setGeometry} />}
-        {geometryMode === 'point' && <p className="hint">Select an area, then use the map pin to adjust the location.</p>}
+        {geometryKind === 'point' && <p className="hint">Select an area, then use the map pin to adjust the location.</p>}
       </>}
 
-      {step === 1 && <fieldset className="field">
+      {step === 1 && geometryKind === 'point' && <fieldset className="field">
         <legend>Location privacy</legend>
         <div className="privacy-cards">
           <label className="privacy-card">
@@ -258,7 +260,7 @@ export function ReportForm({
         </div>
       </fieldset>}
 
-      {step === 1 && needsExactConfirmation && (
+      {step === 1 && geometryKind === 'point' && needsExactConfirmation && (
         <label className="notice notice-warn">
           <input
             type="checkbox"
@@ -279,10 +281,13 @@ export function ReportForm({
         <TurnstileWidget siteKey={turnstileSiteKey} onToken={setTurnstileToken} />
       )}
 
+      {step === 1 && geometryKind === 'polygon' && <p className="notice notice-warn">Search areas are public and are not fuzzed. The polygon represents the area you are reporting.</p>}
+
       {step === 3 && <section className="review-card" aria-labelledby="review-heading">
         <h2 id="review-heading">Review your report</h2>
         <p><strong>Location:</strong> {point?.placeLabel ?? 'Selected area on map'}</p>
-        <p><strong>Privacy:</strong> {privacy === 'approximate' ? 'Approximate (recommended)' : 'Exact location'}</p>
+        {geometryKind === 'point' && <p><strong>Privacy:</strong> {privacy === 'approximate' ? 'Approximate (recommended)' : 'Exact location'}</p>}
+        {geometryKind === 'polygon' && <p><strong>Geometry:</strong> Public search area</p>}
         <p className="hint">Check your details before submitting. Your private edit link will be shown after a successful submission.</p>
       </section>}
 
@@ -295,7 +300,7 @@ export function ReportForm({
       <div className="report-step-actions">
         {step > 0 && <button type="button" className="button button-secondary" onClick={() => setStep((value) => value - 1)}>Back</button>}
         {step < 3 ? (
-          <button type="button" className="button" disabled={(step === 0 && (geometryMode === 'point' ? !point : !geometry)) || (step === 1 && needsExactConfirmation && !confirmExact)} onClick={() => {
+          <button type="button" className="button" disabled={(step === 0 && (geometryKind === 'point' ? !point : !geometry)) || (step === 1 && geometryKind === 'point' && needsExactConfirmation && !confirmExact)} onClick={() => {
             if (step === 2) {
               const invalid = formRef.current?.querySelector<HTMLElement>(':invalid');
               if (invalid) { invalid.focus(); return; }
@@ -303,7 +308,7 @@ export function ReportForm({
             setStep((value) => value + 1);
           }}>Continue</button>
         ) : (
-          <button className="button" disabled={(geometryMode === 'point' ? !point : !geometry) || submitting || uploadingPhoto !== null}>{submitting ? 'Saving…' : mode === 'create' ? 'Submit report' : 'Update report'}</button>
+          <button className="button" disabled={(geometryKind === 'point' ? !point : !geometry) || submitting || uploadingPhoto !== null}>{submitting ? 'Saving…' : mode === 'create' ? 'Submit report' : 'Update report'}</button>
         )}
       </div>
       <p className="hint">
