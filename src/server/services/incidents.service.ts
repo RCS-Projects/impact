@@ -6,6 +6,7 @@ import type { IncidentPublicRow } from '../repos/incidents.repo';
 import * as templatesRepo from '../repos/templates.repo';
 import { incidentFormSchema } from '../schema/form-schema';
 import { parseDisplaySettings, parseReportingArea } from '../schema/incident-schema';
+import { reportGeometryModeSchema } from '../schema/report-geometry';
 import { newPublicId } from '../security/tokens';
 import type { AdminSession } from './auth.service';
 
@@ -45,6 +46,7 @@ export interface CreateIncidentInput {
   center: { latitude: number; longitude: number; zoom: number };
   reportingArea?: unknown;
   reportExpiryDays?: number | null;
+  reportGeometryMode?: 'point' | 'polygon' | 'point_or_polygon';
 }
 
 export async function createDraft(input: CreateIncidentInput, admin: AdminSession) {
@@ -66,6 +68,7 @@ export async function createDraft(input: CreateIncidentInput, admin: AdminSessio
     zoom: input.center.zoom,
     reportingAreaGeoJson: areaGeoJson,
     reportExpiryDays: input.reportExpiryDays ?? null,
+    reportGeometryMode: input.reportGeometryMode ?? 'point',
   });
   if (!row) throw new AppError(500, 'internal', 'Could not create incident');
   await auditRepo.record(db, {
@@ -130,6 +133,7 @@ export interface UpdateIncidentInput {
   displaySettings?: unknown;
   reportExpiryDays?: number | null;
   formSchema?: { version: 1; fields: unknown[] };
+  reportGeometryMode?: 'point' | 'polygon' | 'point_or_polygon';
 }
 
 export async function update(incidentId: string, input: UpdateIncidentInput, admin: AdminSession) {
@@ -147,6 +151,7 @@ export async function update(incidentId: string, input: UpdateIncidentInput, adm
     displaySettings?: unknown;
     reportExpiryDays?: number | null;
     formSchema?: unknown;
+    reportGeometryMode?: 'point' | 'polygon' | 'point_or_polygon';
   } = {};
 
   if (input.title !== undefined) sets.title = input.title;
@@ -156,6 +161,7 @@ export async function update(incidentId: string, input: UpdateIncidentInput, adm
     sets.latitude = input.center.latitude;
   }
   if (input.zoom !== undefined) sets.zoom = input.zoom;
+  if (input.reportGeometryMode !== undefined) sets.reportGeometryMode = reportGeometryModeSchema.parse(input.reportGeometryMode);
 
   if (input.reportingArea !== undefined) {
     if (input.reportingArea === null) {

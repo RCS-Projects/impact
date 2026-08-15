@@ -6,6 +6,7 @@ import { handleApi } from '@/server/errors';
 import { clientIp, noStore } from '@/server/http';
 import { isProduction } from '@/server/env';
 import { createReport, queryPublicReports } from '@/server/services/reports.service';
+import { reportGeometrySchema } from '@/server/schema/report-geometry';
 
 const submitInput = z.object({
   latitude: z.number().min(41).max(84),
@@ -14,6 +15,7 @@ const submitInput = z.object({
   answers: z.unknown(),
   placeLabel: z.string().max(120).optional(),
   turnstileToken: z.string().max(4096).optional(),
+  geometry: reportGeometrySchema.optional(),
 });
 
 export const POST = handleApi(
@@ -30,6 +32,7 @@ export const POST = handleApi(
       browserTokenCookie: cookies().get('impact_browser_token')?.value ?? null,
       uploadClaimToken: cookies().get('impact_upload_claim')?.value ?? null,
       ip: clientIp(request),
+      geometry: data.geometry,
     });
     const response = NextResponse.json(
       {

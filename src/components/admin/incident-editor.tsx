@@ -25,6 +25,7 @@ interface IncidentData {
   closedAt: string | null;
   updatedAt: string;
   reportCount: number;
+  reportGeometryMode: 'point' | 'polygon' | 'point_or_polygon';
 }
 
 async function adminApi(path: string, method: string, body?: unknown) {
@@ -93,6 +94,7 @@ export function IncidentEditor({ incidentId }: { incidentId: string }) {
       reportExpiryDays: incident.reportExpiryDays,
       formSchema: incident.formSchema,
       displaySettings: incident.displaySettings,
+      reportGeometryMode: incident.reportGeometryMode,
     };
     const res = await adminApi(`/api/admin/incidents/${incidentId}`, 'PATCH', body);
     const data = (await res.json().catch(() => ({}))) as { error?: string; changedFields?: string[] };
@@ -187,6 +189,19 @@ export function IncidentEditor({ incidentId }: { incidentId: string }) {
       </div>
 
       {message && <p className="notice" role="status">{message}</p>}
+
+      <section className="card">
+        <h2>Report geometry</h2>
+        <label className="field">
+          Allowed participant geometry
+          <select value={incident.reportGeometryMode} onChange={(event) => updateField('reportGeometryMode', event.target.value as IncidentData['reportGeometryMode'])}>
+            <option value="point">Point reports</option>
+            <option value="polygon">Polygon reports</option>
+            <option value="point_or_polygon">Point or polygon reports</option>
+          </select>
+          <span className="hint">Polygon reports are public search areas and are not privacy-fuzzed.</span>
+        </label>
+      </section>
 
       <section className="card">
         <h2>Details</h2>

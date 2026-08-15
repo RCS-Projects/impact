@@ -15,6 +15,7 @@ import { newOpaqueToken, verifyEditToken, hashEditToken } from '../security/toke
 import * as captcha from './captcha.service';
 import * as rateLimit from './rate-limit.service';
 import { getPublicIncident } from './incidents.service';
+import { reportGeometrySchema, type ReportGeometry } from '../schema/report-geometry';
 
 const OUTSIDE_AREA_MESSAGE = 'That location is outside this incident’s reporting area.';
 
@@ -76,6 +77,7 @@ export interface CreateReportInput {
   browserTokenCookie: string | null;
   uploadClaimToken?: string | null;
   ip: string;
+  geometry?: unknown;
 }
 
 export async function createReport(
@@ -96,6 +98,10 @@ export async function createReport(
   }
 
   const schema = incidentFormSchema.parse(incident.formSchema);
+  const geometry = reportGeometrySchema.parse(input.geometry ?? { type: 'Point', coordinates: [input.longitude, input.latitude] });
+  const mode = incident.reportGeometryMode ?? 'point';
+  if (mode === 'point' && geometry.type !== 'Point') throw AppError.badRequest('This incident accepts point reports only');
+  if (mode === 'polygon' && geometry.type !== 'Polygon') throw AppError.badRequest('This incident accepts polygon reports only');
   const answers = validateAnswers(schema, input.answers);
   const resolvedPhotos = await resolvePhotoAnswers(db, schema, answers, input.uploadClaimToken ?? null);
 
@@ -137,6 +143,7 @@ export async function createReport(
       placeLabel: input.placeLabel ?? null,
       privacy: input.privacy,
       publicPointWkt: pointWkt(publicPoint.longitude, publicPoint.latitude),
+      reportGeometryGeoJson: JSON.stringify(geometry),
       radius: input.privacy === 'approximate' ? PRIVACY_RADIUS_METERS : null,
       browserTokenHash: browserHash,
       ipHash,

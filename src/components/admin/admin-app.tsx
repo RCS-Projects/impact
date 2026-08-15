@@ -97,6 +97,7 @@ export function AdminApp({ signedIn }: { signedIn: boolean }) {
       },
       reportingArea,
       reportExpiryDays: form.get('reportExpiryDays') ? Number(form.get('reportExpiryDays')) : undefined,
+      reportGeometryMode: form.get('reportGeometryMode') || 'point',
     });
     const data = (await response.json().catch(() => ({}))) as {
       error?: string;
@@ -209,6 +210,15 @@ export function AdminApp({ signedIn }: { signedIn: boolean }) {
           <label className="field">
             Report expiry (days)
             <input name="reportExpiryDays" type="number" min={1} max={365} placeholder="No expiry" />
+          </label>
+          <label className="field">
+            Report geometry
+            <select name="reportGeometryMode" defaultValue="point">
+              <option value="point">Point reports</option>
+              <option value="polygon">Polygon reports</option>
+              <option value="point_or_polygon">Point or polygon reports</option>
+            </select>
+            <span className="hint">Choose whether participants mark one location, draw an area, or may choose either.</span>
           </label>
           <div className="grid-3">
             <label className="field">

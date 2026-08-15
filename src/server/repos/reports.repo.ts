@@ -11,6 +11,8 @@ export interface PublicReportRow {
   radius: number | null;
   status: string;
   createdAt: string;
+  geometryType: 'Point' | 'Polygon';
+  geometry: unknown;
 }
 
 export interface ReportBounds {
@@ -34,6 +36,7 @@ export function insert(
     placeLabel: string | null;
     privacy: 'exact' | 'approximate';
     publicPointWkt: string;
+    reportGeometryGeoJson: string;
     radius: number | null;
     browserTokenHash: string;
     ipHash: string;
@@ -47,12 +50,13 @@ export function insert(
   return db<{ id: string }[]>`
     INSERT INTO reports (incident_id, schema_snapshot, answers, public_place_label,
       location_privacy, public_coordinate, privacy_radius_meters, browser_token_hash,
-      ip_hash, edit_token_hash, content_hash, status, suspicious_reasons, expires_at)
+      ip_hash, edit_token_hash, content_hash, status, suspicious_reasons, expires_at, report_geometry)
     VALUES (${report.incidentId}, ${db.json(report.schemaSnapshot as never)},
       ${db.json(report.answers as never)}, ${report.placeLabel}, ${report.privacy},
       ST_GeogFromText(${report.publicPointWkt}), ${report.radius}, ${report.browserTokenHash},
       ${report.ipHash}, ${report.editTokenHash}, ${report.contentHash}, ${report.status},
-      ${db.json(report.suspiciousReasons as never)}, ${report.expiresAt})
+      ${db.json(report.suspiciousReasons as never)}, ${report.expiresAt},
+      ST_SetSRID(ST_GeomFromGeoJSON(${report.reportGeometryGeoJson}), 4326)::geography)
     RETURNING id
   `.then((rows) => rows[0]?.id);
 }
@@ -74,12 +78,14 @@ export function queryPublic(
   return db<PublicReportRow[]>`
     SELECT id, answers, public_place_label AS "placeLabel", location_privacy::text AS privacy,
       ST_X(public_coordinate::geometry) AS longitude, ST_Y(public_coordinate::geometry) AS latitude,
-      privacy_radius_meters::float AS radius, status::text AS status, created_at::text AS "createdAt"
+      privacy_radius_meters::float AS radius, status::text AS status, created_at::text AS "createdAt",
+      COALESCE(ST_GeometryType(report_geometry), 'ST_Point')::text AS "geometryType",
+      ST_AsGeoJSON(report_geometry::geometry)::jsonb AS geometry
     FROM reports
     WHERE incident_id = ${incidentId}
       AND status::text = ANY(${statuses})
       AND (expires_at IS NULL OR expires_at > now())
-      AND public_coordinate && ST_MakeEnvelope(${bounds.west}, ${bounds.south}, ${bounds.east}, ${bounds.north}, 4326)::geography
+      AND report_geometry && ST_MakeEnvelope(${bounds.west}, ${bounds.south}, ${bounds.east}, ${bounds.north}, 4326)::geography
       AND ${where}
     ORDER BY created_at DESC
     LIMIT 500

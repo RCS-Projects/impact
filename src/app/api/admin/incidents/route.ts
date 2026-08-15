@@ -4,6 +4,7 @@ import { handleApi } from '@/server/errors';
 import { noStore } from '@/server/http';
 import { requireAdmin, requireAdminRole } from '@/server/services/auth.service';
 import { createDraft, listForAdmin, dashboardStats } from '@/server/services/incidents.service';
+import { reportGeometryModeSchema } from '@/server/schema/report-geometry';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,6 +19,7 @@ const createInput = z.object({
   }),
   reportingArea: z.unknown().optional(),
   reportExpiryDays: z.number().int().min(1).max(365).nullish(),
+  reportGeometryMode: reportGeometryModeSchema.default('point'),
 });
 
 export const GET = handleApi(async () => {

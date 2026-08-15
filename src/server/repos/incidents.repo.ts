@@ -16,6 +16,7 @@ export interface IncidentPublicRow {
   formSchema: unknown;
   displaySettings: unknown;
   reportExpiryDays: number | null;
+  reportGeometryMode: 'point' | 'polygon' | 'point_or_polygon';
 }
 
 export interface IncidentAdminRow {
@@ -42,6 +43,7 @@ const PUBLIC_SELECT = `
     CASE WHEN i.reporting_area IS NULL THEN NULL ELSE ST_AsGeoJSON(i.reporting_area::geometry)::jsonb END AS "reportingArea",
     i.form_schema AS "formSchema", i.display_settings AS "displaySettings",
     i.report_expiry_days AS "reportExpiryDays"
+    , i.report_geometry_mode AS "reportGeometryMode"
   FROM incidents i
 `;
 
@@ -101,17 +103,18 @@ export function create(
     zoom: number;
     reportingAreaGeoJson: string | null;
     reportExpiryDays: number | null;
+    reportGeometryMode?: 'point' | 'polygon' | 'point_or_polygon';
   },
 ) {
   const point = `SRID=4326;POINT(${incident.longitude} ${incident.latitude})`;
   return db<{ id: string; slug: string; publicId: string }[]>`
     INSERT INTO incidents (public_id, canonical_slug, title, description, form_schema,
-      initial_center, initial_zoom, reporting_area, report_expiry_days)
+      initial_center, initial_zoom, reporting_area, report_expiry_days, report_geometry_mode)
     VALUES (${incident.publicId}, ${incident.slug}, ${incident.title}, ${incident.description},
       ${db.json(incident.formSchema as never)}, ST_GeogFromText(${point}), ${incident.zoom},
       CASE WHEN ${incident.reportingAreaGeoJson}::text IS NULL THEN NULL
         ELSE ST_Multi(ST_SetSRID(ST_GeomFromGeoJSON(${incident.reportingAreaGeoJson}), 4326))::geography END,
-      ${incident.reportExpiryDays})
+      ${incident.reportExpiryDays}, ${incident.reportGeometryMode ?? 'point'})
     RETURNING id, canonical_slug AS slug, public_id AS "publicId"
   `.then((rows) => rows[0]);
 }
@@ -160,6 +163,7 @@ export function findByIdForAdmin(db: postgres.Sql, id: string) {
       CASE WHEN i.reporting_area IS NULL THEN NULL ELSE ST_AsGeoJSON(i.reporting_area::geometry)::jsonb END AS "reportingArea",
       i.form_schema AS "formSchema", i.display_settings AS "displaySettings",
       i.report_expiry_days AS "reportExpiryDays",
+      i.report_geometry_mode AS "reportGeometryMode",
       (SELECT count(*)::int FROM reports r WHERE r.incident_id = i.id) AS "reportCount"
     FROM incidents i
     WHERE i.id = ${id}
@@ -180,6 +184,7 @@ export function update(
     displaySettings?: unknown;
     reportExpiryDays?: number | null;
     formSchema?: unknown;
+    reportGeometryMode?: 'point' | 'polygon' | 'point_or_polygon';
   },
 ) {
   return db.begin(async (tx) => {
@@ -208,6 +213,7 @@ export function update(
     if (update.formSchema !== undefined) {
       clauses.push(tx`form_schema = ${tx.json(update.formSchema as never)}`);
     }
+    if (update.reportGeometryMode !== undefined) clauses.push(tx`report_geometry_mode = ${update.reportGeometryMode}`);
 
     if (clauses.length === 0) return false;
     clauses.push(tx`updated_at = now()`);
