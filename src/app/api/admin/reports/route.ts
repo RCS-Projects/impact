@@ -26,9 +26,14 @@ export const GET = handleApi(async (request: NextRequest) => {
   const page = Math.max(0, Number(request.nextUrl.searchParams.get('page') ?? 0));
   const limit = Math.min(Math.max(1, Number(request.nextUrl.searchParams.get('limit') ?? 25)), 100);
   const offset = page * limit;
+  const privacy = request.nextUrl.searchParams.get('privacy') || undefined;
+  const suspiciousReason = request.nextUrl.searchParams.get('suspiciousReason') || undefined;
+  const hasPhoto = request.nextUrl.searchParams.get('hasPhoto') === 'true';
+  const since = request.nextUrl.searchParams.get('since') || undefined;
+  const filters = { incidentId, statuses, privacy, suspiciousReason, hasPhoto, since };
   const [reports, total] = await Promise.all([
-    listQueue({ incidentId, statuses, limit, offset }, admin),
-    countQueue({ incidentId, statuses }, admin),
+    listQueue({ ...filters, limit, offset }, admin),
+    countQueue(filters, admin),
   ]);
   return NextResponse.json({ reports, total, page, limit }, { headers: noStore() });
 });

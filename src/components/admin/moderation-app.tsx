@@ -43,6 +43,9 @@ export function ModerationApp() {
   const [incidents, setIncidents] = useState<IncidentOption[]>([]);
   const [incidentId, setIncidentId] = useState('');
   const [status, setStatus] = useState('flagged');
+  const [privacy, setPrivacy] = useState('');
+  const [suspiciousReason, setSuspiciousReason] = useState('');
+  const [hasPhoto, setHasPhoto] = useState(false);
   const [error, setError] = useState('');
   const [page, setPage] = useState(0);
   const [total, setTotal] = useState(0);
@@ -56,6 +59,9 @@ export function ModerationApp() {
     const params = new URLSearchParams();
     if (incidentId) params.set('incidentId', incidentId);
     if (status) params.set('status', status);
+    if (privacy) params.set('privacy', privacy);
+    if (suspiciousReason) params.set('suspiciousReason', suspiciousReason);
+    if (hasPhoto) params.set('hasPhoto', 'true');
     params.set('page', String(page));
     params.set('limit', String(limit));
     const response = await fetch(`/api/admin/reports?${params}`);
@@ -70,7 +76,7 @@ export function ModerationApp() {
     setSelected(new Set());
     setSelectedReport(null);
     setRevealedLocation(null);
-  }, [incidentId, status, page]);
+  }, [incidentId, status, privacy, suspiciousReason, hasPhoto, page]);
 
   useEffect(() => {
     void load();
@@ -182,6 +188,9 @@ export function ModerationApp() {
               <option value="removed">Removed</option>
             </select>
           </label>
+          <label className="field" style={{ minWidth: 160 }}>Privacy<select value={privacy} onChange={(event) => { setPrivacy(event.target.value); setPage(0); }}><option value="">All</option><option value="approximate">Approximate</option><option value="exact">Exact</option></select></label>
+          <label className="field" style={{ minWidth: 180 }}>Suspicious reason<select value={suspiciousReason} onChange={(event) => { setSuspiciousReason(event.target.value); setPage(0); }}><option value="">All reasons</option>{Object.entries(REASON_LABELS).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
+          <label className="field"><span>&nbsp;</span><label><input type="checkbox" checked={hasPhoto} onChange={(event) => { setHasPhoto(event.target.checked); setPage(0); }} /> Has photo</label></label>
           <label className="field" style={{ flex: 1, minWidth: 200 }}>
             Note (optional)
             <input

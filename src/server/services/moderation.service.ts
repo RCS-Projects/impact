@@ -16,14 +16,14 @@ const ACTION_TO_STATUS: Record<string, ReportStatus> = {
 };
 
 export function listQueue(
-  options: { incidentId?: string; statuses?: ReportStatus[]; limit?: number; offset?: number },
+  options: { incidentId?: string; statuses?: ReportStatus[]; privacy?: string; suspiciousReason?: string; hasPhoto?: boolean; since?: string; limit?: number; offset?: number },
   _admin: AdminSession,
 ) {
   return moderationRepo.listQueue(getSql(), options);
 }
 
 export function countQueue(
-  options: { incidentId?: string; statuses?: ReportStatus[] },
+  options: { incidentId?: string; statuses?: ReportStatus[]; privacy?: string; suspiciousReason?: string; hasPhoto?: boolean; since?: string },
   _admin: AdminSession,
 ) {
   return moderationRepo.countQueue(getSql(), options);
