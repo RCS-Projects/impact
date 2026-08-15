@@ -4,6 +4,12 @@ const ADMIN_LOGIN = process.env.E2E_ADMIN_LOGIN ?? 'admin';
 const ADMIN_PASSWORD = process.env.E2E_ADMIN_PASSWORD ?? 'admin';
 
 test.describe('public reporting loop', () => {
+  test.beforeEach(async ({ page }) => {
+    page.on('dialog', async (dialog) => {
+      await dialog.accept();
+    });
+  });
+
   test('admin publishes a map, public submits and edits an approximate report', async ({
     page,
   }) => {
@@ -11,6 +17,8 @@ test.describe('public reporting loop', () => {
     await page.fill('input[name="login"]', ADMIN_LOGIN);
     await page.fill('input[name="password"]', ADMIN_PASSWORD);
     await page.click('button:has-text("Sign in")');
+    await page.waitForTimeout(300);
+    await page.reload();
     await page.waitForSelector('text=Incident maps');
 
     const title = `E2E Storm ${Date.now()}`;

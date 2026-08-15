@@ -5,7 +5,7 @@ export default defineConfig({
   timeout: 60_000,
   retries: 0,
   use: {
-    baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:3000',
+    baseURL: process.env.E2E_BASE_URL ?? 'http://127.0.0.1:3000',
     headless: true,
   },
 });
