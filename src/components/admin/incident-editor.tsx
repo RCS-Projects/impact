@@ -97,7 +97,10 @@ export function IncidentEditor({ incidentId }: { incidentId: string }) {
       reportGeometryMode: incident.reportGeometryMode,
     };
     const res = await adminApi(`/api/admin/incidents/${incidentId}`, 'PATCH', body);
-    const data = (await res.json().catch(() => ({}))) as { error?: string; changedFields?: string[] };
+    const data = (await res.json().catch(() => ({}))) as {
+      error?: string;
+      changedFields?: string[];
+    };
     setSaving(false);
     if (!res.ok) {
       setMessage(data.error ?? 'Could not save changes');
@@ -121,18 +124,34 @@ export function IncidentEditor({ incidentId }: { incidentId: string }) {
   }
 
   async function duplicateIncident() {
-    if (!window.confirm('Create a new draft copy of this incident, including its form and map settings?')) return;
+    if (
+      !window.confirm(
+        'Create a new draft copy of this incident, including its form and map settings?',
+      )
+    )
+      return;
     const response = await adminApi(`/api/admin/incidents/${incidentId}/duplicate`, 'POST', {});
     const data = (await response.json().catch(() => ({}))) as { error?: string; id?: string };
-    if (!response.ok || !data.id) { setMessage(data.error ?? 'Could not duplicate incident'); return; }
+    if (!response.ok || !data.id) {
+      setMessage(data.error ?? 'Could not duplicate incident');
+      return;
+    }
     router.push(`/admin/incidents/${data.id}`);
   }
 
   async function downloadSensitive(format: 'csv' | 'json') {
-    if (!window.confirm('Sensitive export includes exact submitted locations. Download only for secure handling?')) return;
-    const response = await fetch(`/api/admin/incidents/${incidentId}/export?format=${format}&sensitive=true`, {
-      headers: { 'x-sensitive-export-confirm': 'yes' },
-    });
+    if (
+      !window.confirm(
+        'Sensitive export includes exact submitted locations. Download only for secure handling?',
+      )
+    )
+      return;
+    const response = await fetch(
+      `/api/admin/incidents/${incidentId}/export?format=${format}&sensitive=true`,
+      {
+        headers: { 'x-sensitive-export-confirm': 'yes' },
+      },
+    );
     if (!response.ok) {
       setMessage('Sensitive export failed');
       return;
@@ -147,7 +166,11 @@ export function IncidentEditor({ incidentId }: { incidentId: string }) {
   }
 
   if (!incident) {
-    return <main className="shell"><p className="hint">Loading incident...</p></main>;
+    return (
+      <main className="shell">
+        <p className="hint">Loading incident...</p>
+      </main>
+    );
   }
 
   const publicUrl = `/map/${incident.slug}-${incident.publicId}`;
@@ -160,15 +183,22 @@ export function IncidentEditor({ incidentId }: { incidentId: string }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
         <div style={{ flex: 1 }}>
           <p className="eyebrow">
-            <a href="/admin" style={{ color: 'inherit' }}>Incidents</a>
-            {' '}/ Edit
+            <a href="/admin" style={{ color: 'inherit' }}>
+              Incidents
+            </a>{' '}
+            / Edit
           </p>
           <h1 className="page-title">{incident.title}</h1>
         </div>
         <div className="buttons" style={{ marginTop: 0 }}>
           <span className={`chip chip-${incident.status}`}>{incident.status}</span>
           {incident.status !== 'draft' && (
-            <a className="button button-secondary button-sm" href={publicUrl} target="_blank" rel="noreferrer">
+            <a
+              className="button button-secondary button-sm"
+              href={publicUrl}
+              target="_blank"
+              rel="noreferrer"
+            >
               View public
             </a>
           )}
@@ -178,37 +208,70 @@ export function IncidentEditor({ incidentId }: { incidentId: string }) {
             </button>
           )}
           {canClose && (
-            <button type="button" className="button button-secondary button-sm" onClick={() => act('close')}>
+            <button
+              type="button"
+              className="button button-secondary button-sm"
+              onClick={() => act('close')}
+            >
               Close
             </button>
           )}
           {canArchive && (
-            <button type="button" className="button button-secondary button-sm" onClick={() => act('archive')}>
+            <button
+              type="button"
+              className="button button-secondary button-sm"
+              onClick={() => act('archive')}
+            >
               Archive
             </button>
           )}
-          <button type="button" className="button button-secondary button-sm" onClick={() => void duplicateIncident()}>Duplicate</button>
-          <button type="button" className="button button-secondary button-sm" onClick={() => {
-            if (dirty && !window.confirm('You have unsaved changes. Leave without saving?')) return;
-            router.push('/admin');
-          }}>
+          <button
+            type="button"
+            className="button button-secondary button-sm"
+            onClick={() => void duplicateIncident()}
+          >
+            Duplicate
+          </button>
+          <button
+            type="button"
+            className="button button-secondary button-sm"
+            onClick={() => {
+              if (dirty && !window.confirm('You have unsaved changes. Leave without saving?'))
+                return;
+              router.push('/admin');
+            }}
+          >
             Back
           </button>
         </div>
       </div>
 
-      {message && <p className="notice" role="status">{message}</p>}
+      {message && (
+        <p className="notice" role="status">
+          {message}
+        </p>
+      )}
 
       <section className="card">
         <h2>Report geometry</h2>
         <label className="field">
           Allowed participant geometry
-          <select value={incident.reportGeometryMode} onChange={(event) => updateField('reportGeometryMode', event.target.value as IncidentData['reportGeometryMode'])}>
+          <select
+            value={incident.reportGeometryMode}
+            onChange={(event) =>
+              updateField(
+                'reportGeometryMode',
+                event.target.value as IncidentData['reportGeometryMode'],
+              )
+            }
+          >
             <option value="point">Point reports</option>
             <option value="polygon">Polygon reports</option>
             <option value="point_or_polygon">Point or polygon reports</option>
           </select>
-          <span className="hint">Polygon reports are public search areas and are not privacy-fuzzed.</span>
+          <span className="hint">
+            Polygon reports are public search areas and are not privacy-fuzzed.
+          </span>
         </label>
       </section>
 
@@ -270,7 +333,9 @@ export function IncidentEditor({ incidentId }: { incidentId: string }) {
               min={1}
               max={365}
               value={incident.reportExpiryDays ?? ''}
-              onChange={(e) => updateField('reportExpiryDays', e.target.value ? Number(e.target.value) : null)}
+              onChange={(e) =>
+                updateField('reportExpiryDays', e.target.value ? Number(e.target.value) : null)
+              }
               placeholder="No expiry"
             />
           </label>
@@ -285,7 +350,8 @@ export function IncidentEditor({ incidentId }: { incidentId: string }) {
                 incident.reportingArea &&
                 typeof incident.reportingArea === 'object' &&
                 (incident.reportingArea as { type?: string }).type === 'Polygon'
-                  ? ((incident.reportingArea as { coordinates: [number, number][] }).coordinates[0] as unknown as [number, number][])
+                  ? ((incident.reportingArea as { coordinates: [number, number][] })
+                      .coordinates[0] as unknown as [number, number][])
                   : null
               }
               onChange={(coords) => {
@@ -330,9 +396,7 @@ export function IncidentEditor({ incidentId }: { incidentId: string }) {
         <FormBuilder
           value={(incident.formSchema as { fields: FormField[] })?.fields ?? []}
           lockedKeys={incident.status === 'draft' ? new Set() : lockedKeysRef.current}
-          onChange={(fields) =>
-            updateField('formSchema', { version: 1, fields })
-          }
+          onChange={(fields) => updateField('formSchema', { version: 1, fields })}
         />
       </section>
 
@@ -348,9 +412,17 @@ export function IncidentEditor({ incidentId }: { incidentId: string }) {
               type="number"
               min={4}
               max={30}
-              value={typeof (incident.displaySettings as Record<string, unknown>)?.pointRadius === 'number' ? (incident.displaySettings as Record<string, unknown>).pointRadius as number : 10}
+              value={
+                typeof (incident.displaySettings as Record<string, unknown>)?.pointRadius ===
+                'number'
+                  ? ((incident.displaySettings as Record<string, unknown>).pointRadius as number)
+                  : 10
+              }
               onChange={(e) => {
-                const ds = { ...((incident.displaySettings ?? {}) as Record<string, unknown>), pointRadius: Number(e.target.value) || 10 };
+                const ds = {
+                  ...((incident.displaySettings ?? {}) as Record<string, unknown>),
+                  pointRadius: Number(e.target.value) || 10,
+                };
                 updateField('displaySettings', ds);
               }}
             />
@@ -361,9 +433,17 @@ export function IncidentEditor({ incidentId }: { incidentId: string }) {
               type="number"
               min={20}
               max={100}
-              value={typeof (incident.displaySettings as Record<string, unknown>)?.clusterRadius === 'number' ? (incident.displaySettings as Record<string, unknown>).clusterRadius as number : 45}
+              value={
+                typeof (incident.displaySettings as Record<string, unknown>)?.clusterRadius ===
+                'number'
+                  ? ((incident.displaySettings as Record<string, unknown>).clusterRadius as number)
+                  : 45
+              }
               onChange={(e) => {
-                const ds = { ...((incident.displaySettings ?? {}) as Record<string, unknown>), clusterRadius: Number(e.target.value) || 45 };
+                const ds = {
+                  ...((incident.displaySettings ?? {}) as Record<string, unknown>),
+                  clusterRadius: Number(e.target.value) || 45,
+                };
                 updateField('displaySettings', ds);
               }}
             />
@@ -374,21 +454,36 @@ export function IncidentEditor({ incidentId }: { incidentId: string }) {
               type="number"
               min={8}
               max={18}
-              value={typeof (incident.displaySettings as Record<string, unknown>)?.clusterMaxZoom === 'number' ? (incident.displaySettings as Record<string, unknown>).clusterMaxZoom as number : 14}
+              value={
+                typeof (incident.displaySettings as Record<string, unknown>)?.clusterMaxZoom ===
+                'number'
+                  ? ((incident.displaySettings as Record<string, unknown>).clusterMaxZoom as number)
+                  : 14
+              }
               onChange={(e) => {
-                const ds = { ...((incident.displaySettings ?? {}) as Record<string, unknown>), clusterMaxZoom: Number(e.target.value) || 14 };
+                const ds = {
+                  ...((incident.displaySettings ?? {}) as Record<string, unknown>),
+                  clusterMaxZoom: Number(e.target.value) || 14,
+                };
                 updateField('displaySettings', ds);
               }}
             />
           </label>
           <label className="field">
             <span>&nbsp;</span>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.4rem' }}>
+            <label
+              style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.4rem' }}
+            >
               <input
                 type="checkbox"
-                checked={(incident.displaySettings as Record<string, unknown>)?.showDescription !== false}
+                checked={
+                  (incident.displaySettings as Record<string, unknown>)?.showDescription !== false
+                }
                 onChange={(e) => {
-                  const ds = { ...((incident.displaySettings ?? {}) as Record<string, unknown>), showDescription: e.target.checked };
+                  const ds = {
+                    ...((incident.displaySettings ?? {}) as Record<string, unknown>),
+                    showDescription: e.target.checked,
+                  };
                   updateField('displaySettings', ds);
                 }}
               />
@@ -400,19 +495,30 @@ export function IncidentEditor({ incidentId }: { incidentId: string }) {
 
       <section className="card">
         <h2>Meta</h2>
-        <dl style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '0.3rem 1rem', fontSize: '0.85rem' }}>
+        <dl
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'auto 1fr',
+            gap: '0.3rem 1rem',
+            fontSize: '0.85rem',
+          }}
+        >
           <dt className="hint">ID</dt>
           <dd style={{ fontFamily: 'monospace' }}>{incident.id}</dd>
           <dt className="hint">Created</dt>
           <dd>{new Date(incident.createdAt).toLocaleString()}</dd>
-          {incident.publishedAt && <>
-            <dt className="hint">Published</dt>
-            <dd>{new Date(incident.publishedAt).toLocaleString()}</dd>
-          </>}
-          {incident.closedAt && <>
-            <dt className="hint">Closed</dt>
-            <dd>{new Date(incident.closedAt).toLocaleString()}</dd>
-          </>}
+          {incident.publishedAt && (
+            <>
+              <dt className="hint">Published</dt>
+              <dd>{new Date(incident.publishedAt).toLocaleString()}</dd>
+            </>
+          )}
+          {incident.closedAt && (
+            <>
+              <dt className="hint">Closed</dt>
+              <dd>{new Date(incident.closedAt).toLocaleString()}</dd>
+            </>
+          )}
           <dt className="hint">Last updated</dt>
           <dd>{new Date(incident.updatedAt).toLocaleString()}</dd>
           <dt className="hint">Export</dt>
@@ -440,8 +546,20 @@ export function IncidentEditor({ incidentId }: { incidentId: string }) {
           <dd>
             <p className="hint">Includes exact submitted locations. Every download is audited.</p>
             <div className="buttons" style={{ marginTop: 0 }}>
-              <button type="button" className="button button-danger button-sm" onClick={() => void downloadSensitive('csv')}>Sensitive CSV</button>
-              <button type="button" className="button button-danger button-sm" onClick={() => void downloadSensitive('json')}>Sensitive JSON</button>
+              <button
+                type="button"
+                className="button button-danger button-sm"
+                onClick={() => void downloadSensitive('csv')}
+              >
+                Sensitive CSV
+              </button>
+              <button
+                type="button"
+                className="button button-danger button-sm"
+                onClick={() => void downloadSensitive('json')}
+              >
+                Sensitive JSON
+              </button>
             </div>
           </dd>
           <dt className="hint">Public URL</dt>
@@ -449,14 +567,24 @@ export function IncidentEditor({ incidentId }: { incidentId: string }) {
             {incident.status === 'draft' ? (
               <span className="hint">publish first</span>
             ) : (
-              <a href={publicUrl} target="_blank" rel="noreferrer">{publicUrl}</a>
+              <a href={publicUrl} target="_blank" rel="noreferrer">
+                {publicUrl}
+              </a>
             )}
           </dd>
         </dl>
       </section>
 
       <div className="editor-save-bar" role="status" aria-live="polite">
-        <span>{saving ? 'Saving…' : dirty ? 'Unsaved changes' : message.startsWith('Saved:') ? 'Saved' : 'No unsaved changes'}</span>
+        <span>
+          {saving
+            ? 'Saving…'
+            : dirty
+              ? 'Unsaved changes'
+              : message.startsWith('Saved:')
+                ? 'Saved'
+                : 'No unsaved changes'}
+        </span>
         <button
           type="button"
           className="button"

@@ -76,13 +76,13 @@ async function main() {
       'report form: privacy cards stack vertically',
       Boolean(first && second && second.y >= first.y + first.height - 1),
     );
-    const inputFontSize = await page.locator('input#geocode-query').evaluate((el) =>
-      window.getComputedStyle(el).fontSize,
-    );
+    const inputFontSize = await page
+      .locator('input#geocode-query')
+      .evaluate((el) => window.getComputedStyle(el).fontSize);
     check(`report form: inputs are 16px (got ${inputFontSize})`, inputFontSize === '16px');
-    const buttonHeight = await page.locator('button:has-text("Submit report")').evaluate((el) =>
-      el.getBoundingClientRect().height,
-    );
+    const buttonHeight = await page
+      .locator('button:has-text("Submit report")')
+      .evaluate((el) => el.getBoundingClientRect().height);
     check(`report form: submit button >= 44px (got ${buttonHeight})`, buttonHeight >= 44);
     await page.screenshot({ path: `${OUT}/${tag}-report-form.png`, fullPage: true });
 
@@ -93,7 +93,9 @@ async function main() {
   }
 
   await browser.close();
-  console.log(failures.length === 0 ? '\nALL MOBILE CHECKS PASSED' : `\n${failures.length} FAILURES`);
+  console.log(
+    failures.length === 0 ? '\nALL MOBILE CHECKS PASSED' : `\n${failures.length} FAILURES`,
+  );
   if (failures.length > 0) process.exit(1);
 }
 

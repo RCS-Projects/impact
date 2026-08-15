@@ -1,6 +1,7 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { getCsrfToken } from '@/lib/csrf';
 import { PolygonEditor } from '@/components/admin/polygon-editor';
 
@@ -20,7 +21,12 @@ interface TemplateOption {
   key: string;
   title: string;
 }
-interface DashboardStats { liveIncidents: number; flaggedReports: number; recentReports: number; pendingUploads: number }
+interface DashboardStats {
+  liveIncidents: number;
+  flaggedReports: number;
+  recentReports: number;
+  pendingUploads: number;
+}
 
 async function adminApi(path: string, body: unknown) {
   return fetch(path, {
@@ -103,7 +109,9 @@ export function AdminApp({
         zoom: Number(form.get('zoom')),
       },
       reportingArea,
-      reportExpiryDays: form.get('reportExpiryDays') ? Number(form.get('reportExpiryDays')) : undefined,
+      reportExpiryDays: form.get('reportExpiryDays')
+        ? Number(form.get('reportExpiryDays'))
+        : undefined,
       reportGeometryMode: form.get('reportGeometryMode') || 'point',
     });
     const data = (await response.json().catch(() => ({}))) as {
@@ -121,8 +129,14 @@ export function AdminApp({
   }
 
   async function act(incidentId: string, action: 'publish' | 'close' | 'archive') {
-    const consequence = action === 'publish' ? 'make this map public' : action === 'close' ? 'stop accepting new reports' : 'archive this incident';
-    if (!window.confirm(`Are you sure you want to ${action} this incident and ${consequence}?`)) return;
+    const consequence =
+      action === 'publish'
+        ? 'make this map public'
+        : action === 'close'
+          ? 'stop accepting new reports'
+          : 'archive this incident';
+    if (!window.confirm(`Are you sure you want to ${action} this incident and ${consequence}?`))
+      return;
     setMessage('');
     const response = await adminApi(`/api/admin/incidents/${incidentId}/${action}`, {});
     if (!response.ok) {
@@ -137,7 +151,10 @@ export function AdminApp({
     if (!window.confirm('Create a new draft copy of this incident?')) return;
     const response = await adminApi(`/api/admin/incidents/${incidentId}/duplicate`, {});
     const data = (await response.json().catch(() => ({}))) as { error?: string; id?: string };
-    if (!response.ok || !data.id) { setMessage(data.error ?? 'Could not duplicate incident'); return; }
+    if (!response.ok || !data.id) {
+      setMessage(data.error ?? 'Could not duplicate incident');
+      return;
+    }
     router.push(`/admin/incidents/${data.id}`);
   }
 
@@ -170,9 +187,9 @@ export function AdminApp({
           <h1 className="page-title">Incident maps</h1>
         </div>
         <div className="page-actions">
-          <a className="button button-secondary button-sm" href="/admin/templates">
+          <Link className="button button-secondary button-sm" href="/admin/templates">
             Templates
-          </a>
+          </Link>
           <a className="button button-secondary button-sm" href="/admin/moderation">
             Moderation queue
           </a>
@@ -190,12 +207,26 @@ export function AdminApp({
 
       {message && <p className="notice">{message}</p>}
 
-      {stats && <div className="grid-4 card-spaced">
-        <div className="card"><strong>{stats.liveIncidents}</strong><span className="hint"> live incidents</span></div>
-        <div className="card"><strong>{stats.flaggedReports}</strong><span className="hint"> flagged reports</span></div>
-        <div className="card"><strong>{stats.recentReports}</strong><span className="hint"> reports in the last hour</span></div>
-        <div className="card"><strong>{stats.pendingUploads}</strong><span className="hint"> pending uploads</span></div>
-      </div>}
+      {stats && (
+        <div className="grid-4 card-spaced">
+          <div className="card">
+            <strong>{stats.liveIncidents}</strong>
+            <span className="hint"> live incidents</span>
+          </div>
+          <div className="card">
+            <strong>{stats.flaggedReports}</strong>
+            <span className="hint"> flagged reports</span>
+          </div>
+          <div className="card">
+            <strong>{stats.recentReports}</strong>
+            <span className="hint"> reports in the last hour</span>
+          </div>
+          <div className="card">
+            <strong>{stats.pendingUploads}</strong>
+            <span className="hint"> pending uploads</span>
+          </div>
+        </div>
+      )}
 
       <section className="card">
         <h2>Create incident</h2>
@@ -210,9 +241,15 @@ export function AdminApp({
           </label>
           <label className="field">
             Template
-            <select name="templateKey" value={templateKey} onChange={(event) => setTemplateKey(event.target.value)}>
+            <select
+              name="templateKey"
+              value={templateKey}
+              onChange={(event) => setTemplateKey(event.target.value)}
+            >
               {templates.map((t) => (
-                <option key={t.key} value={t.key}>{t.title}</option>
+                <option key={t.key} value={t.key}>
+                  {t.title}
+                </option>
               ))}
               {templates.length === 0 && (
                 <>
@@ -224,7 +261,13 @@ export function AdminApp({
           </label>
           <label className="field">
             Report expiry (days)
-            <input name="reportExpiryDays" type="number" min={1} max={365} placeholder="No expiry" />
+            <input
+              name="reportExpiryDays"
+              type="number"
+              min={1}
+              max={365}
+              placeholder="No expiry"
+            />
           </label>
           <label className="field">
             Report geometry
@@ -233,20 +276,41 @@ export function AdminApp({
               <option value="polygon">Polygon reports</option>
               <option value="point_or_polygon">Point or polygon reports</option>
             </select>
-            <span className="hint">Choose whether participants mark one location, draw an area, or may choose either.</span>
+            <span className="hint">
+              Choose whether participants mark one location, draw an area, or may choose either.
+            </span>
           </label>
           <div className="grid-3">
             <label className="field">
               Latitude
-              <input name="latitude" type="number" step="any" required defaultValue={defaultCenter.latitude} />
+              <input
+                name="latitude"
+                type="number"
+                step="any"
+                required
+                defaultValue={defaultCenter.latitude}
+              />
             </label>
             <label className="field">
               Longitude
-              <input name="longitude" type="number" step="any" required defaultValue={defaultCenter.longitude} />
+              <input
+                name="longitude"
+                type="number"
+                step="any"
+                required
+                defaultValue={defaultCenter.longitude}
+              />
             </label>
             <label className="field">
               Zoom
-              <input name="zoom" type="number" min="3" max="18" required defaultValue={defaultCenter.zoom} />
+              <input
+                name="zoom"
+                type="number"
+                min="3"
+                max="18"
+                required
+                defaultValue={defaultCenter.zoom}
+              />
             </label>
           </div>
           <label className="field">
@@ -260,7 +324,8 @@ export function AdminApp({
                 reportingArea &&
                 typeof reportingArea === 'object' &&
                 (reportingArea as { type?: string }).type === 'Polygon'
-                  ? ((reportingArea as { coordinates: [number, number][] }).coordinates[0] as unknown as [number, number][])
+                  ? ((reportingArea as { coordinates: [number, number][] })
+                      .coordinates[0] as unknown as [number, number][])
                   : null
               }
               onChange={(coords) => {
@@ -276,16 +341,30 @@ export function AdminApp({
               value={reportingArea ? JSON.stringify(reportingArea) : ''}
               onChange={(e) => {
                 const raw = e.target.value.trim();
-                if (!raw) { setReportingArea(null); return; }
-                try { setReportingAreaError(''); setReportingArea(JSON.parse(raw)); } catch { setReportingAreaError('Enter valid GeoJSON before creating the incident.'); }
+                if (!raw) {
+                  setReportingArea(null);
+                  return;
+                }
+                try {
+                  setReportingAreaError('');
+                  setReportingArea(JSON.parse(raw));
+                } catch {
+                  setReportingAreaError('Enter valid GeoJSON before creating the incident.');
+                }
               }}
               rows={4}
               placeholder='{"type":"Polygon","coordinates":[[...]]}'
               style={{ marginTop: '0.3rem' }}
             />
-            {reportingAreaError && <p className="notice notice-error" role="alert">{reportingAreaError}</p>}
+            {reportingAreaError && (
+              <p className="notice notice-error" role="alert">
+                {reportingAreaError}
+              </p>
+            )}
           </label>
-          <button className="button" disabled={Boolean(reportingAreaError)}>Create draft</button>
+          <button className="button" disabled={Boolean(reportingAreaError)}>
+            Create draft
+          </button>
         </form>
       </section>
 
@@ -332,10 +411,37 @@ export function AdminApp({
                         >
                           Edit
                         </a>
-                        <a className="button button-secondary button-sm" href={`/admin/moderation?incidentId=${incident.id}`}>Moderate</a>
-                        {incident.status !== 'draft' && <a className="button button-secondary button-sm" href={url} target="_blank" rel="noreferrer">View map</a>}
-                        <a className="button button-secondary button-sm" href={`/api/admin/incidents/${incident.id}/export?format=csv`} target="_blank" rel="noreferrer">Export</a>
-                        <button type="button" className="button button-secondary button-sm" onClick={() => void duplicateIncident(incident.id)}>Duplicate</button>
+                        <a
+                          className="button button-secondary button-sm"
+                          href={`/admin/moderation?incidentId=${incident.id}`}
+                        >
+                          Moderate
+                        </a>
+                        {incident.status !== 'draft' && (
+                          <a
+                            className="button button-secondary button-sm"
+                            href={url}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            View map
+                          </a>
+                        )}
+                        <a
+                          className="button button-secondary button-sm"
+                          href={`/api/admin/incidents/${incident.id}/export?format=csv`}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Export
+                        </a>
+                        <button
+                          type="button"
+                          className="button button-secondary button-sm"
+                          onClick={() => void duplicateIncident(incident.id)}
+                        >
+                          Duplicate
+                        </button>
                         {incident.status === 'draft' && (
                           <button
                             type="button"

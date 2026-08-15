@@ -33,6 +33,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    volumes:
+      - uploads_data:/app/data/uploads
     ports:
       - '${APP_BIND_ADDRESS:-127.0.0.1}:3000:3000'
     healthcheck:
@@ -45,3 +47,4 @@ services:
 
 volumes:
   postgres_data:
+  uploads_data:

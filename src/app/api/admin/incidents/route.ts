@@ -5,6 +5,7 @@ import { noStore } from '@/server/http';
 import { requireAdmin, requireAdminRole } from '@/server/services/auth.service';
 import { createDraft, listForAdmin, dashboardStats } from '@/server/services/incidents.service';
 import { reportGeometryModeSchema } from '@/server/schema/report-geometry';
+import { reportingAreaSchema } from '@/server/schema/incident-schema';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,7 +18,7 @@ const createInput = z.object({
     longitude: z.number().min(-142).max(-52),
     zoom: z.number().min(3).max(18),
   }),
-  reportingArea: z.unknown().optional(),
+  reportingArea: reportingAreaSchema.optional(),
   reportExpiryDays: z.number().int().min(1).max(365).nullish(),
   reportGeometryMode: reportGeometryModeSchema.default('point'),
 });

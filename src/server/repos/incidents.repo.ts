@@ -76,18 +76,23 @@ export function listForAdmin(db: postgres.Sql) {
 }
 
 export function dashboardStats(db: postgres.Sql) {
-  return db<{
-    liveIncidents: number;
-    flaggedReports: number;
-    recentReports: number;
-    pendingUploads: number;
-  }[]>`
+  return db<
+    {
+      liveIncidents: number;
+      flaggedReports: number;
+      recentReports: number;
+      pendingUploads: number;
+    }[]
+  >`
     SELECT
       (SELECT count(*)::int FROM incidents WHERE status = 'live') AS "liveIncidents",
       (SELECT count(*)::int FROM reports WHERE status = 'flagged') AS "flaggedReports",
       (SELECT count(*)::int FROM reports WHERE created_at > now() - interval '1 hour') AS "recentReports",
       (SELECT count(*)::int FROM uploads WHERE report_id IS NULL) AS "pendingUploads"
-  `.then((rows) => rows[0] ?? { liveIncidents: 0, flaggedReports: 0, recentReports: 0, pendingUploads: 0 });
+  `.then(
+    (rows) =>
+      rows[0] ?? { liveIncidents: 0, flaggedReports: 0, recentReports: 0, pendingUploads: 0 },
+  );
 }
 
 export function create(
@@ -201,7 +206,9 @@ export function update(
       if (update.reportingAreaGeoJson === null) {
         clauses.push(tx`reporting_area = NULL`);
       } else {
-        clauses.push(tx`reporting_area = ST_Multi(ST_SetSRID(ST_GeomFromGeoJSON(${update.reportingAreaGeoJson}), 4326))::geography`);
+        clauses.push(
+          tx`reporting_area = ST_Multi(ST_SetSRID(ST_GeomFromGeoJSON(${update.reportingAreaGeoJson}), 4326))::geography`,
+        );
       }
     }
     if (update.displaySettings !== undefined) {
@@ -213,12 +220,15 @@ export function update(
     if (update.formSchema !== undefined) {
       clauses.push(tx`form_schema = ${tx.json(update.formSchema as never)}`);
     }
-    if (update.reportGeometryMode !== undefined) clauses.push(tx`report_geometry_mode = ${update.reportGeometryMode}`);
+    if (update.reportGeometryMode !== undefined)
+      clauses.push(tx`report_geometry_mode = ${update.reportGeometryMode}`);
 
     if (clauses.length === 0) return false;
     clauses.push(tx`updated_at = now()`);
     const setClause = clauses.reduce((acc, fragment) => tx`${acc}, ${fragment}`);
-    const rows = await tx<{ id: string }[]>`UPDATE incidents SET ${setClause} WHERE id = ${id} RETURNING id`;
+    const rows = await tx<
+      { id: string }[]
+    >`UPDATE incidents SET ${setClause} WHERE id = ${id} RETURNING id`;
     return rows.length > 0;
   });
 }
@@ -230,7 +240,11 @@ export function geofenceAllows(db: postgres.Sql, incidentId: string, pointWkt: s
   `.then((rows) => Boolean(rows[0]?.allowed));
 }
 
-export function geofenceAllowsGeometry(db: postgres.Sql, incidentId: string, geometryGeoJson: string) {
+export function geofenceAllowsGeometry(
+  db: postgres.Sql,
+  incidentId: string,
+  geometryGeoJson: string,
+) {
   return db<{ allowed: boolean }[]>`
     SELECT reporting_area IS NULL OR (
       ST_IsValid(ST_SetSRID(ST_GeomFromGeoJSON(${geometryGeoJson}), 4326))

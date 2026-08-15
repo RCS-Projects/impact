@@ -52,9 +52,7 @@ export function FormBuilder({
   }
 
   function update(key: string, patch: Partial<FormField>) {
-    onChange(
-      value.map((f) => (f.key === key ? { ...f, ...patch } : f)),
-    );
+    onChange(value.map((f) => (f.key === key ? { ...f, ...patch } : f)));
   }
 
   function moveUp(key: string) {
@@ -95,13 +93,20 @@ export function FormBuilder({
             <span className="chip" style={{ fontSize: '0.72rem' }}>
               {TYPE_LABELS[field.type]}
             </span>
-            {field.required && <span className="chip chip-flagged" style={{ fontSize: '0.72rem' }}>required</span>}
+            {field.required && (
+              <span className="chip chip-flagged" style={{ fontSize: '0.72rem' }}>
+                required
+              </span>
+            )}
             <div className="buttons" style={{ marginTop: 0, gap: '0.2rem' }}>
               <button
                 type="button"
                 className="button button-secondary button-sm"
                 style={{ padding: '0.2rem 0.4rem', minHeight: 0, fontSize: '0.75rem' }}
-                onClick={(e) => { e.stopPropagation(); moveUp(field.key); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  moveUp(field.key);
+                }}
                 disabled={idx === 0}
               >
                 &uarr;
@@ -110,7 +115,10 @@ export function FormBuilder({
                 type="button"
                 className="button button-secondary button-sm"
                 style={{ padding: '0.2rem 0.4rem', minHeight: 0, fontSize: '0.75rem' }}
-                onClick={(e) => { e.stopPropagation(); moveDown(field.key); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  moveDown(field.key);
+                }}
                 disabled={idx === value.length - 1}
               >
                 &darr;
@@ -118,8 +126,16 @@ export function FormBuilder({
               <button
                 type="button"
                 className="button button-secondary button-sm"
-                style={{ padding: '0.2rem 0.4rem', minHeight: 0, fontSize: '0.75rem', color: '#e5534b' }}
-                onClick={(e) => { e.stopPropagation(); remove(field.key); }}
+                style={{
+                  padding: '0.2rem 0.4rem',
+                  minHeight: 0,
+                  fontSize: '0.75rem',
+                  color: '#e5534b',
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  remove(field.key);
+                }}
               >
                 &times;
               </button>
@@ -128,7 +144,12 @@ export function FormBuilder({
 
           {expanded === field.key && (
             <div
-              style={{ marginTop: '0.6rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}
+              style={{
+                marginTop: '0.6rem',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.4rem',
+              }}
               onClick={(e) => e.stopPropagation()}
             >
               <div className="grid-3">
@@ -137,7 +158,9 @@ export function FormBuilder({
                   <input
                     value={field.key}
                     disabled={lockedKeys.has(field.key)}
-                    onChange={(e) => update(field.key, { key: e.target.value.replace(/[^a-z0-9_]/g, '') })}
+                    onChange={(e) =>
+                      update(field.key, { key: e.target.value.replace(/[^a-z0-9_]/g, '') })
+                    }
                     pattern="^[a-z][a-z0-9_]{0,63}$"
                     maxLength={64}
                   />
@@ -185,7 +208,14 @@ export function FormBuilder({
               </label>
 
               {field.type !== 'info' && (
-                <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem' }}>
+                <label
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.4rem',
+                    fontSize: '0.85rem',
+                  }}
+                >
                   <input
                     type="checkbox"
                     checked={field.required}
@@ -197,11 +227,17 @@ export function FormBuilder({
 
               {needsChoices(field.type) && (
                 <div>
-                  <span className="hint" style={{ fontSize: '0.8rem', marginBottom: '0.2rem', display: 'block' }}>
+                  <span
+                    className="hint"
+                    style={{ fontSize: '0.8rem', marginBottom: '0.2rem', display: 'block' }}
+                  >
                     Choices
                   </span>
                   {(field.choices ?? []).map((choice, ci) => (
-                    <div key={ci} style={{ display: 'flex', gap: '0.3rem', marginBottom: '0.3rem' }}>
+                    <div
+                      key={ci}
+                      style={{ display: 'flex', gap: '0.3rem', marginBottom: '0.3rem' }}
+                    >
                       <input
                         value={choice.value}
                         onChange={(e) => {
@@ -241,22 +277,32 @@ export function FormBuilder({
                     onClick={() => {
                       const choices = [
                         ...(field.choices ?? []),
-                        { value: `option_${(field.choices?.length ?? 0) + 1}`, label: `Option ${(field.choices?.length ?? 0) + 1}` },
+                        {
+                          value: `option_${(field.choices?.length ?? 0) + 1}`,
+                          label: `Option ${(field.choices?.length ?? 0) + 1}`,
+                        },
                       ];
                       update(field.key, { choices });
                     }}
                   >
                     + Add choice
                   </button>
-                  {field.choices && field.choices.length > 1 && (() => {
-                    const dupes = field.choices.filter((c, i, arr) => arr.findIndex((x) => x.value === c.value) !== i);
-                    if (dupes.length === 0) return null;
-                    return (
-                      <p className="notice notice-warn" style={{ marginTop: '0.3rem', fontSize: '0.8rem' }}>
-                        Duplicate values: {dupes.map((d) => d.value).join(', ')}
-                      </p>
-                    );
-                  })()}
+                  {field.choices &&
+                    field.choices.length > 1 &&
+                    (() => {
+                      const dupes = field.choices.filter(
+                        (c, i, arr) => arr.findIndex((x) => x.value === c.value) !== i,
+                      );
+                      if (dupes.length === 0) return null;
+                      return (
+                        <p
+                          className="notice notice-warn"
+                          style={{ marginTop: '0.3rem', fontSize: '0.8rem' }}
+                        >
+                          Duplicate values: {dupes.map((d) => d.value).join(', ')}
+                        </p>
+                      );
+                    })()}
                 </div>
               )}
 

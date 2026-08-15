@@ -89,13 +89,19 @@ export function UserManagement() {
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
         <div style={{ flex: 1 }}>
           <p className="eyebrow">
-            <a href="/admin" style={{ color: 'inherit' }}>Admin</a>
-            {' '}/ Users
+            <a href="/admin" style={{ color: 'inherit' }}>
+              Admin
+            </a>{' '}
+            / Users
           </p>
           <h1 className="page-title">User management</h1>
         </div>
         <div className="buttons" style={{ marginTop: 0 }}>
-          <button type="button" className="button button-sm" onClick={() => setShowCreate(!showCreate)}>
+          <button
+            type="button"
+            className="button button-sm"
+            onClick={() => setShowCreate(!showCreate)}
+          >
             {showCreate ? 'Cancel' : 'New user'}
           </button>
         </div>
@@ -129,13 +135,21 @@ export function UserManagement() {
               </label>
               <label className="field">
                 Role
-                <select value={newRole} onChange={(e) => setNewRole(e.target.value as 'admin' | 'moderator')}>
+                <select
+                  value={newRole}
+                  onChange={(e) => setNewRole(e.target.value as 'admin' | 'moderator')}
+                >
                   <option value="moderator">Moderator</option>
                   <option value="admin">Admin</option>
                 </select>
               </label>
             </div>
-            <button type="button" className="button" style={{ alignSelf: 'flex-start' }} onClick={() => void createUser()}>
+            <button
+              type="button"
+              className="button"
+              style={{ alignSelf: 'flex-start' }}
+              onClick={() => void createUser()}
+            >
               Create user
             </button>
           </div>
@@ -174,7 +188,9 @@ export function UserManagement() {
                     <div className="buttons" style={{ marginTop: 0 }}>
                       <select
                         value={user.role}
-                        onChange={(e) => void changeRole(user.id, e.target.value as 'admin' | 'moderator')}
+                        onChange={(e) =>
+                          void changeRole(user.id, e.target.value as 'admin' | 'moderator')
+                        }
                         style={{ fontSize: '0.82rem', padding: '0.2rem 0.4rem' }}
                       >
                         <option value="moderator">Moderator</option>
@@ -194,7 +210,9 @@ export function UserManagement() {
               ))}
               {users.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="hint">No users found.</td>
+                  <td colSpan={5} className="hint">
+                    No users found.
+                  </td>
                 </tr>
               )}
             </tbody>

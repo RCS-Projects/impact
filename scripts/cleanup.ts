@@ -49,7 +49,9 @@ export async function runCleanup() {
         // The database row is still removed if the file was already absent.
       }
     }
-    console.log(`Cleaned ${orphaned.length} orphaned upload row(s), removed ${removedFiles} file(s)`);
+    console.log(
+      `Cleaned ${orphaned.length} orphaned upload row(s), removed ${removedFiles} file(s)`,
+    );
   } catch (error) {
     console.error('Cleanup failed:', error);
     process.exit(1);

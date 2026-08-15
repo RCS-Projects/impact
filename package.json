@@ -3,13 +3,13 @@
   "version": "0.2.0",
   "private": true,
   "engines": {
-    "node": ">=18.18"
+    "node": ">=20.9.0"
   },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint . --max-warnings=0",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -20,30 +20,36 @@
     "db:seed": "tsx scripts/seed.ts",
     "db:reset": "tsx scripts/migrate.ts --reset",
     "prune:expired": "tsx scripts/prune-expired.ts",
-    "cleanup": "tsx scripts/cleanup.ts"
+    "cleanup": "tsx scripts/cleanup.ts",
+    "preflight": "tsx scripts/preflight.ts"
   },
   "dependencies": {
     "bcryptjs": "2.4.3",
     "jose": "5.9.6",
     "maplibre-gl": "4.7.1",
-    "nanoid": "5.0.9",
-    "next": "14.2.25",
+    "nanoid": "^5.1.6",
+    "next": "^15.5.23",
     "postgres": "3.4.5",
     "react": "18.3.1",
     "react-dom": "18.3.1",
-    "sharp": "0.33.5",
+    "sharp": "^0.35.3",
     "zod": "3.24.1"
   },
   "devDependencies": {
-    "@playwright/test": "1.49.1",
+    "@playwright/test": "^1.62.1",
     "@types/node": "22.10.2",
     "@types/react": "18.3.12",
     "@types/react-dom": "18.3.1",
     "eslint": "8.57.1",
-    "eslint-config-next": "14.2.25",
+    "eslint-config-next": "^15.5.23",
+    "playwright": "^1.62.1",
     "prettier": "3.4.2",
-    "tsx": "4.19.2",
+    "tsx": "^4.23.12",
     "typescript": "5.7.2",
-    "vitest": "2.1.8"
+    "vitest": "^3.2.7"
+  },
+  "overrides": {
+    "sharp": "$sharp",
+    "postcss": "8.5.26"
   }
 }

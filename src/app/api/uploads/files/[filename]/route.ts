@@ -17,8 +17,8 @@ const MIME_MAP: Record<string, string> = {
 };
 
 export const GET = handleApi(
-  async (_request: NextRequest, { params }: { params: { filename: string } }) => {
-    const filename = params.filename;
+  async (_request: NextRequest, { params }: { params: Promise<{ filename: string }> }) => {
+    const { filename } = await params;
     if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
       return NextResponse.json({ error: 'Invalid filename' }, { status: 400 });
     }

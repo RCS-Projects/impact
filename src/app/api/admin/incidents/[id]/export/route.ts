@@ -9,16 +9,20 @@ import * as auditRepo from '@/server/repos/audit.repo';
 export const dynamic = 'force-dynamic';
 
 export const GET = handleApi(
-  async (request: NextRequest, { params }: { params: { id: string } }) => {
+  async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+    const { id } = await params;
     const admin = await requireAdminRole(request);
     const db = getSql();
-    const incident = await incidentsRepo.findByIdForAdmin(db, params.id);
+    const incident = await incidentsRepo.findByIdForAdmin(db, id);
     if (!incident) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
     const format = request.nextUrl.searchParams.get('format') ?? 'json';
     const sensitive = request.nextUrl.searchParams.get('sensitive') === 'true';
     if (sensitive && request.headers.get('x-sensitive-export-confirm') !== 'yes') {
-      return NextResponse.json({ error: 'Explicit confirmation is required for sensitive exports' }, { status: 400, headers: noStore() });
+      return NextResponse.json(
+        { error: 'Explicit confirmation is required for sensitive exports' },
+        { status: 400, headers: noStore() },
+      );
     }
     const rows = await db<
       {
@@ -47,13 +51,13 @@ export const GET = handleApi(
         ${sensitive ? db`ST_Y(p.submitted_coordinate::geometry)` : db`NULL`} AS "exactLatitude"
       FROM reports r
       ${sensitive ? db`JOIN report_private_locations p ON p.report_id = r.id` : db``}
-      WHERE r.incident_id = ${params.id}
+      WHERE r.incident_id = ${id}
       ORDER BY r.created_at DESC
     `;
 
     if (sensitive) {
       await auditRepo.record(db, {
-        incidentId: params.id,
+        incidentId: id,
         actorType: 'admin',
         actorId: admin.id,
         eventType: 'sensitive_export_downloaded',
@@ -67,7 +71,19 @@ export const GET = handleApi(
         for (const key of Object.keys(row.answers)) allKeys.add(key);
       }
       const answerKeys = [...allKeys].sort();
-      const header = ['id', 'status', 'createdAt', 'geometryType', 'geometry', 'latitude', 'longitude', ...(sensitive ? ['exactLatitude', 'exactLongitude'] : []), 'privacy', 'placeLabel', ...answerKeys];
+      const header = [
+        'id',
+        'status',
+        'createdAt',
+        'geometryType',
+        'geometry',
+        'latitude',
+        'longitude',
+        ...(sensitive ? ['exactLatitude', 'exactLongitude'] : []),
+        'privacy',
+        'placeLabel',
+        ...answerKeys,
+      ];
       const csvRows = rows.map((row) => {
         const base = [
           row.id,
@@ -91,7 +107,9 @@ export const GET = handleApi(
         });
         return [...base, ...answers];
       });
-      const csv = [header, ...csvRows].map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+      const csv = [header, ...csvRows]
+        .map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(','))
+        .join('\n');
       return new NextResponse(csv, {
         headers: {
           'Content-Type': 'text/csv',
@@ -102,9 +120,12 @@ export const GET = handleApi(
     }
 
     return NextResponse.json(
-      { incident: { title: incident.title, slug: incident.slug, status: incident.status }, reports: rows },
       {
-      headers: {
+        incident: { title: incident.title, slug: incident.slug, status: incident.status },
+        reports: rows,
+      },
+      {
+        headers: {
           ...noStore(),
           'Content-Disposition': `attachment; filename="${incident.slug}-${new Date().toISOString().slice(0, 10)}.json"`,
         },

@@ -85,19 +85,28 @@ export function update(
       sets.push(
         tx`suspicious_reasons = suspicious_reasons || ${tx.json(update.suspiciousReasons as never)}`,
       );
-    if (update.reportGeometryGeoJson) sets.push(tx`report_geometry = ST_SetSRID(ST_GeomFromGeoJSON(${update.reportGeometryGeoJson}), 4326)::geography`);
+    if (update.reportGeometryGeoJson)
+      sets.push(
+        tx`report_geometry = ST_SetSRID(ST_GeomFromGeoJSON(${update.reportGeometryGeoJson}), 4326)::geography`,
+      );
     sets.push(tx`updated_at = now()`);
     const setClause = sets.reduce((acc, fragment) => tx`${acc}, ${fragment}`);
     await tx`UPDATE reports SET ${setClause} WHERE id = ${reportId}`;
-      await tx`
+    await tx`
       UPDATE report_private_locations
       SET submitted_coordinate = ST_GeogFromText(${update.privatePointWkt}),
         submitted_place_label = ${update.placeLabel}, updated_at = now()
       WHERE report_id = ${reportId}
       `;
     if (update.uploadIds?.length && update.uploadClaimHash) {
-      const claimed = await uploadsRepo.claim(tx, update.uploadIds, update.uploadClaimHash, reportId);
-      if (claimed.length !== update.uploadIds.length) throw new Error('Could not claim photo upload');
+      const claimed = await uploadsRepo.claim(
+        tx,
+        update.uploadIds,
+        update.uploadClaimHash,
+        reportId,
+      );
+      if (claimed.length !== update.uploadIds.length)
+        throw new Error('Could not claim photo upload');
     }
   });
 }

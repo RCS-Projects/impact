@@ -161,7 +161,8 @@ export async function update(incidentId: string, input: UpdateIncidentInput, adm
     sets.latitude = input.center.latitude;
   }
   if (input.zoom !== undefined) sets.zoom = input.zoom;
-  if (input.reportGeometryMode !== undefined) sets.reportGeometryMode = reportGeometryModeSchema.parse(input.reportGeometryMode);
+  if (input.reportGeometryMode !== undefined)
+    sets.reportGeometryMode = reportGeometryModeSchema.parse(input.reportGeometryMode);
 
   if (input.reportingArea !== undefined) {
     if (input.reportingArea === null) {
@@ -188,7 +189,9 @@ export async function update(incidentId: string, input: UpdateIncidentInput, adm
       for (const oldField of oldSchema.fields) {
         const nextField = nextByKey.get(oldField.key);
         if (!nextField || nextField.type !== oldField.type) {
-          throw AppError.conflict(`Published form field "${oldField.label}" cannot be removed or change type`);
+          throw AppError.conflict(
+            `Published form field "${oldField.label}" cannot be removed or change type`,
+          );
         }
       }
       if ((await incidentsRepo.reportCount(db, incidentId)) > 0) {
@@ -198,7 +201,9 @@ export async function update(incidentId: string, input: UpdateIncidentInput, adm
           const nextChoices = new Set((nextField.choices ?? []).map((choice) => choice.value));
           for (const choice of oldChoices) {
             if (!nextChoices.has(choice)) {
-              throw AppError.conflict(`Choice "${choice}" cannot be removed while reports use this form`);
+              throw AppError.conflict(
+                `Choice "${choice}" cannot be removed while reports use this form`,
+              );
             }
           }
         }
@@ -233,9 +238,20 @@ export async function duplicate(incidentId: string, admin: AdminSession) {
   const db = getSql();
   const source = await incidentsRepo.findByIdForAdmin(db, incidentId);
   if (!source) throw AppError.notFound('Incident not found');
-  const row = await incidentsRepo.duplicate(db, incidentId, newPublicId(), slugify(`${source.title} copy`));
+  const row = await incidentsRepo.duplicate(
+    db,
+    incidentId,
+    newPublicId(),
+    slugify(`${source.title} copy`),
+  );
   if (!row) throw new AppError(500, 'internal', 'Could not duplicate incident');
-  await auditRepo.record(db, { incidentId: row.id, actorType: 'admin', actorId: admin.id, eventType: 'incident_duplicated', metadata: { sourceIncidentId: incidentId } });
+  await auditRepo.record(db, {
+    incidentId: row.id,
+    actorType: 'admin',
+    actorId: admin.id,
+    eventType: 'incident_duplicated',
+    metadata: { sourceIncidentId: incidentId },
+  });
   return { id: row.id, url: publicUrl(row) };
 }
 

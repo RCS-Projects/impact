@@ -41,7 +41,7 @@ export const POST = handleApi(async (request: NextRequest) => {
   }
 
   const inputBuffer = Buffer.from(await file.arrayBuffer());
-  const claimToken = cookies().get(UPLOAD_CLAIM_COOKIE)?.value ?? newOpaqueToken();
+  const claimToken = (await cookies()).get(UPLOAD_CLAIM_COOKIE)?.value ?? newOpaqueToken();
   const claimHash = hashBrowserToken(claimToken);
   let sanitized;
   try {

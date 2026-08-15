@@ -52,7 +52,10 @@ export function ModerationApp() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [note, setNote] = useState('');
   const [selectedReport, setSelectedReport] = useState<QueueReport | null>(null);
-  const [revealedLocation, setRevealedLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [revealedLocation, setRevealedLocation] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
   const limit = 25;
 
   const load = useCallback(async () => {
@@ -94,7 +97,12 @@ export function ModerationApp() {
   async function act(reportId: string, action: string) {
     let actionNote = note;
     if (action === 'reject' || action === 'remove') {
-      if (!window.confirm(`${action === 'remove' ? 'Remove' : 'Reject'} this report? This is a destructive moderation action.`)) return;
+      if (
+        !window.confirm(
+          `${action === 'remove' ? 'Remove' : 'Reject'} this report? This is a destructive moderation action.`,
+        )
+      )
+        return;
       if (!actionNote) actionNote = window.prompt('Add a moderation note (recommended):', '') ?? '';
     }
     const response = await fetch(`/api/admin/reports/${reportId}/status`, {
@@ -115,7 +123,12 @@ export function ModerationApp() {
     if (selected.size === 0) return;
     let actionNote = note;
     if (action === 'reject' || action === 'remove') {
-      if (!window.confirm(`${action === 'remove' ? 'Remove' : 'Reject'} ${selected.size} selected reports?`)) return;
+      if (
+        !window.confirm(
+          `${action === 'remove' ? 'Remove' : 'Reject'} ${selected.size} selected reports?`,
+        )
+      )
+        return;
       if (!actionNote) actionNote = window.prompt('Add a moderation note (recommended):', '') ?? '';
     }
     const response = await fetch('/api/admin/reports/batch-status', {
@@ -167,7 +180,13 @@ export function ModerationApp() {
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
           <label className="field" style={{ minWidth: 220 }}>
             Incident
-            <select value={incidentId} onChange={(event) => { setIncidentId(event.target.value); setPage(0); }}>
+            <select
+              value={incidentId}
+              onChange={(event) => {
+                setIncidentId(event.target.value);
+                setPage(0);
+              }}
+            >
               <option value="">All incidents</option>
               {incidents.map((incident) => (
                 <option key={incident.id} value={incident.id}>
@@ -178,7 +197,13 @@ export function ModerationApp() {
           </label>
           <label className="field" style={{ minWidth: 200 }}>
             Status
-            <select value={status} onChange={(event) => { setStatus(event.target.value); setPage(0); }}>
+            <select
+              value={status}
+              onChange={(event) => {
+                setStatus(event.target.value);
+                setPage(0);
+              }}
+            >
               <option value="">All statuses</option>
               <option value="flagged">Flagged</option>
               <option value="unverified">Unverified</option>
@@ -188,9 +213,51 @@ export function ModerationApp() {
               <option value="removed">Removed</option>
             </select>
           </label>
-          <label className="field" style={{ minWidth: 160 }}>Privacy<select value={privacy} onChange={(event) => { setPrivacy(event.target.value); setPage(0); }}><option value="">All</option><option value="approximate">Approximate</option><option value="exact">Exact</option></select></label>
-          <label className="field" style={{ minWidth: 180 }}>Suspicious reason<select value={suspiciousReason} onChange={(event) => { setSuspiciousReason(event.target.value); setPage(0); }}><option value="">All reasons</option>{Object.entries(REASON_LABELS).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
-          <label className="field"><span>&nbsp;</span><label><input type="checkbox" checked={hasPhoto} onChange={(event) => { setHasPhoto(event.target.checked); setPage(0); }} /> Has photo</label></label>
+          <label className="field" style={{ minWidth: 160 }}>
+            Privacy
+            <select
+              value={privacy}
+              onChange={(event) => {
+                setPrivacy(event.target.value);
+                setPage(0);
+              }}
+            >
+              <option value="">All</option>
+              <option value="approximate">Approximate</option>
+              <option value="exact">Exact</option>
+            </select>
+          </label>
+          <label className="field" style={{ minWidth: 180 }}>
+            Suspicious reason
+            <select
+              value={suspiciousReason}
+              onChange={(event) => {
+                setSuspiciousReason(event.target.value);
+                setPage(0);
+              }}
+            >
+              <option value="">All reasons</option>
+              {Object.entries(REASON_LABELS).map(([key, label]) => (
+                <option key={key} value={key}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="field">
+            <span>&nbsp;</span>
+            <label>
+              <input
+                type="checkbox"
+                checked={hasPhoto}
+                onChange={(event) => {
+                  setHasPhoto(event.target.checked);
+                  setPage(0);
+                }}
+              />{' '}
+              Has photo
+            </label>
+          </label>
           <label className="field" style={{ flex: 1, minWidth: 200 }}>
             Note (optional)
             <input
@@ -204,7 +271,10 @@ export function ModerationApp() {
       </div>
 
       {selected.size > 0 && (
-        <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+        <div
+          className="card"
+          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}
+        >
           <span className="hint">{selected.size} selected</span>
           {ACTIONS.map((action) => (
             <button
@@ -284,15 +354,28 @@ export function ModerationApp() {
                           alt="Uploaded report photo"
                           width={(value as { width?: number }).width}
                           height={(value as { height?: number }).height}
-                          style={{ maxWidth: 180, maxHeight: 120, objectFit: 'contain', verticalAlign: 'middle' }}
+                          style={{
+                            maxWidth: 180,
+                            maxHeight: 120,
+                            objectFit: 'contain',
+                            verticalAlign: 'middle',
+                          }}
                         />
-                      ) : Array.isArray(value) ? value.join(', ') : String(value)}
+                      ) : Array.isArray(value) ? (
+                        value.join(', ')
+                      ) : (
+                        String(value)
+                      )}
                     </div>
                   ))}
                 </td>
                 <td>
-        <div className="page-actions">
-                    <button type="button" className="button button-secondary button-sm" onClick={() => setSelectedReport(report)}>
+                  <div className="page-actions">
+                    <button
+                      type="button"
+                      className="button button-secondary button-sm"
+                      onClick={() => setSelectedReport(report)}
+                    >
                       Details
                     </button>
                     {ACTIONS.map((action) => (
@@ -322,29 +405,96 @@ export function ModerationApp() {
 
       {selectedReport && (
         <aside className="moderation-detail" aria-label="Selected report details">
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '.75rem', alignItems: 'center' }}>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              gap: '.75rem',
+              alignItems: 'center',
+            }}
+          >
             <h2>Report details</h2>
-            <button type="button" className="button button-secondary button-sm" onClick={() => { setSelectedReport(null); setRevealedLocation(null); }}>Close</button>
+            <button
+              type="button"
+              className="button button-secondary button-sm"
+              onClick={() => {
+                setSelectedReport(null);
+                setRevealedLocation(null);
+              }}
+            >
+              Close
+            </button>
           </div>
-          <p><strong>{selectedReport.incidentTitle}</strong> · {formatRelativeTime(selectedReport.createdAt)}</p>
-          <p className="hint">{selectedReport.placeLabel ?? 'No public place label'} · Privacy: {selectedReport.privacy}</p>
-          {selectedReport.suspiciousReasons.length > 0 && <p>{selectedReport.suspiciousReasons.map((reason) => REASON_LABELS[reason] ?? reason).join(', ')}</p>}
+          <p>
+            <strong>{selectedReport.incidentTitle}</strong> ·{' '}
+            {formatRelativeTime(selectedReport.createdAt)}
+          </p>
+          <p className="hint">
+            {selectedReport.placeLabel ?? 'No public place label'} · Privacy:{' '}
+            {selectedReport.privacy}
+          </p>
+          {selectedReport.suspiciousReasons.length > 0 && (
+            <p>
+              {selectedReport.suspiciousReasons
+                .map((reason) => REASON_LABELS[reason] ?? reason)
+                .join(', ')}
+            </p>
+          )}
           <dl>
-            {Object.entries(selectedReport.answers).map(([key, value]) => <div key={key}><dt className="hint">{key.replaceAll('_', ' ')}</dt><dd>{Array.isArray(value) ? value.join(', ') : typeof value === 'object' ? '[photo or structured answer]' : String(value)}</dd></div>)}
+            {Object.entries(selectedReport.answers).map(([key, value]) => (
+              <div key={key}>
+                <dt className="hint">{key.replaceAll('_', ' ')}</dt>
+                <dd>
+                  {Array.isArray(value)
+                    ? value.join(', ')
+                    : typeof value === 'object'
+                      ? '[photo or structured answer]'
+                      : String(value)}
+                </dd>
+              </div>
+            ))}
           </dl>
           {revealedLocation ? (
-            <p className="notice notice-warn">Exact location revealed: {revealedLocation.latitude}, {revealedLocation.longitude}</p>
+            <p className="notice notice-warn">
+              Exact location revealed: {revealedLocation.latitude}, {revealedLocation.longitude}
+            </p>
           ) : (
-            <button type="button" className="button button-danger button-sm" onClick={async () => {
-              if (!window.confirm('Reveal the exact submitted location? This action is audited.')) return;
-              const response = await fetch(`/api/admin/reports/${selectedReport.id}/true-location`);
-              if (!response.ok) { setError('Could not reveal the exact location'); return; }
-              const data = (await response.json()) as { location: { latitude: number; longitude: number } };
-              setRevealedLocation(data.location);
-            }}>Reveal exact location</button>
+            <button
+              type="button"
+              className="button button-danger button-sm"
+              onClick={async () => {
+                if (!window.confirm('Reveal the exact submitted location? This action is audited.'))
+                  return;
+                const response = await fetch(
+                  `/api/admin/reports/${selectedReport.id}/true-location`,
+                );
+                if (!response.ok) {
+                  setError('Could not reveal the exact location');
+                  return;
+                }
+                const data = (await response.json()) as {
+                  location: { latitude: number; longitude: number };
+                };
+                setRevealedLocation(data.location);
+              }}
+            >
+              Reveal exact location
+            </button>
           )}
           <div className="buttons">
-            {ACTIONS.map((action) => <button key={action.action} type="button" className={`button button-sm ${action.className ?? 'button-secondary'}`} onClick={() => { void act(selectedReport.id, action.action); setSelectedReport(null); }}>{action.label}</button>)}
+            {ACTIONS.map((action) => (
+              <button
+                key={action.action}
+                type="button"
+                className={`button button-sm ${action.className ?? 'button-secondary'}`}
+                onClick={() => {
+                  void act(selectedReport.id, action.action);
+                  setSelectedReport(null);
+                }}
+              >
+                {action.label}
+              </button>
+            ))}
           </div>
         </aside>
       )}

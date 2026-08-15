@@ -66,7 +66,7 @@ function getDummyHash(): Promise<string> {
 }
 
 export async function currentAdmin(): Promise<AdminSession | null> {
-  const token = cookies().get(SESSION_COOKIE)?.value;
+  const token = (await cookies()).get(SESSION_COOKIE)?.value;
   if (!token) return null;
   try {
     const { payload } = await jwtVerify(token, signingKey());

@@ -149,11 +149,15 @@ export function IncidentMapView(props: IncidentMapViewProps) {
         data: { type: 'FeatureCollection', features: [] },
       });
       map.addLayer({
-        id: 'report-polygon-fill', type: 'fill', source: 'report-polygons',
+        id: 'report-polygon-fill',
+        type: 'fill',
+        source: 'report-polygons',
         paint: { 'fill-color': ['get', 'color'], 'fill-opacity': 0.2 },
       });
       map.addLayer({
-        id: 'report-polygon-line', type: 'line', source: 'report-polygons',
+        id: 'report-polygon-line',
+        type: 'line',
+        source: 'report-polygons',
         paint: { 'line-color': ['get', 'color'], 'line-width': 3 },
       });
       map.addLayer({
@@ -242,7 +246,9 @@ export function IncidentMapView(props: IncidentMapViewProps) {
         if (id) setSelectedId(id);
       });
       map.on('click', 'report-polygon-fill', (event) => {
-        const feature = map.queryRenderedFeatures(event.point, { layers: ['report-polygon-fill'] })[0];
+        const feature = map.queryRenderedFeatures(event.point, {
+          layers: ['report-polygon-fill'],
+        })[0];
         const id = feature?.properties?.id as string | undefined;
         if (id) setSelectedId(id);
       });
@@ -287,7 +293,8 @@ export function IncidentMapView(props: IncidentMapViewProps) {
     };
     const scheduleReconnect = () => {
       if (stopped || reconnectTimerRef.current) return;
-      if (!fallbackPollRef.current) fallbackPollRef.current = setInterval(() => void loadReports(), 30_000);
+      if (!fallbackPollRef.current)
+        fallbackPollRef.current = setInterval(() => void loadReports(), 30_000);
       reconnectTimerRef.current = setTimeout(() => {
         reconnectTimerRef.current = null;
         activeSource.close();
@@ -313,8 +320,14 @@ export function IncidentMapView(props: IncidentMapViewProps) {
     es.addEventListener('report_updated', () => {
       void loadReports();
     });
-    es.onopen = () => { reconnectDelay = 1_000; clearFallback(); };
-    es.onerror = () => { es.close(); scheduleReconnect(); };
+    es.onopen = () => {
+      reconnectDelay = 1_000;
+      clearFallback();
+    };
+    es.onerror = () => {
+      es.close();
+      scheduleReconnect();
+    };
     return () => {
       stopped = true;
       es.close();
@@ -334,17 +347,23 @@ export function IncidentMapView(props: IncidentMapViewProps) {
     if (!pointSource || !circleSource || !polygonSource) return;
     pointSource.setData({
       type: 'FeatureCollection',
-      features: reports.filter((report) => !report.geometry || report.geometry.type === 'Point').map((report) => ({
-        type: 'Feature',
-        properties: { id: report.id, color: colorFor(report) },
-        geometry: { type: 'Point', coordinates: [report.longitude, report.latitude] },
-      })),
+      features: reports
+        .filter((report) => !report.geometry || report.geometry.type === 'Point')
+        .map((report) => ({
+          type: 'Feature',
+          properties: { id: report.id, color: colorFor(report) },
+          geometry: { type: 'Point', coordinates: [report.longitude, report.latitude] },
+        })),
     });
     polygonSource.setData({
       type: 'FeatureCollection',
-      features: reports.filter((report) => report.geometry?.type === 'Polygon').map((report) => ({
-        type: 'Feature', properties: { id: report.id, color: colorFor(report) }, geometry: report.geometry as GeoJSON.Polygon,
-      })),
+      features: reports
+        .filter((report) => report.geometry?.type === 'Polygon')
+        .map((report) => ({
+          type: 'Feature',
+          properties: { id: report.id, color: colorFor(report) },
+          geometry: report.geometry as GeoJSON.Polygon,
+        })),
     });
     circleSource.setData({
       type: 'FeatureCollection',
@@ -383,7 +402,8 @@ export function IncidentMapView(props: IncidentMapViewProps) {
 
   const selected = selectedId ? (reports.find((report) => report.id === selectedId) ?? null) : null;
   const activeFilterCount =
-    (PUBLIC_VISIBLE_STATUSES.length - activeStatuses.size) +
+    PUBLIC_VISIBLE_STATUSES.length -
+    activeStatuses.size +
     Object.values(fieldFilters).reduce((count, values) => count + values.size, 0);
 
   return (
@@ -391,7 +411,9 @@ export function IncidentMapView(props: IncidentMapViewProps) {
       <header className="topbar">
         <div>
           <div className="topbar-title">{props.title}</div>
-          {dsShowDescription && props.description && <div className="hint topbar-desc">{props.description}</div>}
+          {dsShowDescription && props.description && (
+            <div className="hint topbar-desc">{props.description}</div>
+          )}
         </div>
         <span className={`chip ${props.incidentStatus === 'live' ? 'chip-live' : 'chip-closed'}`}>
           {props.incidentStatus === 'live' ? 'Receiving reports' : 'Closed to new reports'}
@@ -410,9 +432,17 @@ export function IncidentMapView(props: IncidentMapViewProps) {
           aria-expanded={filtersOpen}
         >
           Filters
-          {activeFilterCount > 0 && <span className="chip" aria-label={`${activeFilterCount} active filters`}>{activeFilterCount}</span>}
+          {activeFilterCount > 0 && (
+            <span className="chip" aria-label={`${activeFilterCount} active filters`}>
+              {activeFilterCount}
+            </span>
+          )}
         </button>
-        <button type="button" className="button button-secondary button-sm" onClick={() => setViewMode(viewMode === 'map' ? 'list' : 'map')}>
+        <button
+          type="button"
+          className="button button-secondary button-sm"
+          onClick={() => setViewMode(viewMode === 'map' ? 'list' : 'map')}
+        >
           {viewMode === 'map' ? 'List view' : 'Map view'}
         </button>
         {props.incidentStatus === 'live' && (
@@ -429,9 +459,19 @@ export function IncidentMapView(props: IncidentMapViewProps) {
             <h2>Reports in view ({reports.length})</h2>
             {reports.length === 0 && <p className="hint">No reports match the current filters.</p>}
             {reports.map((report) => (
-              <button key={report.id} type="button" className="report-list-item" onClick={() => { setSelectedId(report.id); setViewMode('map'); }}>
+              <button
+                key={report.id}
+                type="button"
+                className="report-list-item"
+                onClick={() => {
+                  setSelectedId(report.id);
+                  setViewMode('map');
+                }}
+              >
                 <strong>{report.placeLabel ?? 'Reported location'}</strong>
-                <span>{STATUS_LABELS[report.status]} · {formatRelativeTime(report.createdAt)}</span>
+                <span>
+                  {STATUS_LABELS[report.status]} · {formatRelativeTime(report.createdAt)}
+                </span>
               </button>
             ))}
           </section>
@@ -563,7 +603,10 @@ export function IncidentMapView(props: IncidentMapViewProps) {
                     <div className="detail-row" key={field.key}>
                       <dt>{field.label}</dt>
                       <dd>
-                        {field.type === 'photo' && value && typeof value === 'object' && 'url' in value ? (
+                        {field.type === 'photo' &&
+                        value &&
+                        typeof value === 'object' &&
+                        'url' in value ? (
                           <img
                             src={(value as { url: string }).url}
                             alt={field.label}
@@ -594,7 +637,11 @@ export function IncidentMapView(props: IncidentMapViewProps) {
           </div>
         )}
         {props.incidentStatus === 'live' && (
-          <a className="button fab" href={`/map/${props.reference}/report`} aria-label="Submit a report">
+          <a
+            className="button fab"
+            href={`/map/${props.reference}/report`}
+            aria-label="Submit a report"
+          >
             + Report
           </a>
         )}

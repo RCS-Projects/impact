@@ -5,9 +5,10 @@ import { requireAdminRole } from '@/server/services/auth.service';
 import { archive } from '@/server/services/incidents.service';
 
 export const POST = handleApi(
-  async (request: NextRequest, { params }: { params: { id: string } }) => {
+  async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+    const { id } = await params;
     const admin = await requireAdminRole(request);
-    await archive(params.id, admin);
+    await archive(id, admin);
     return NextResponse.json({ ok: true }, { headers: noStore() });
   },
 );

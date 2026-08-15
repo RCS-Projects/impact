@@ -23,7 +23,9 @@ test.describe('public reporting loop', () => {
       // Some WebKit/CI combinations do not surface the server-component refresh
       // after a client navigation. Re-authenticate through the same endpoint and
       // reload so the rest of the browser workflow remains covered.
-      await page.request.post('/api/admin/login', { data: { login: ADMIN_LOGIN, password: ADMIN_PASSWORD } });
+      await page.request.post('/api/admin/login', {
+        data: { login: ADMIN_LOGIN, password: ADMIN_PASSWORD },
+      });
       await page.goto('/admin');
       await page.waitForSelector('text=Incident maps');
     }

@@ -87,7 +87,8 @@ export function PolygonEditor({
     if (!container.current || mapRef.current) return;
     const map = new maplibregl.Map({
       container: container.current,
-      style: process.env.NEXT_PUBLIC_MAP_STYLE_URL ?? 'https://tiles.openfreemap.org/styles/liberty',
+      style:
+        process.env.NEXT_PUBLIC_MAP_STYLE_URL ?? 'https://tiles.openfreemap.org/styles/liberty',
       center,
       zoom: 11,
     });
@@ -143,16 +144,25 @@ export function PolygonEditor({
           {drawing ? 'Drawing...' : 'Draw on map'}
         </button>
         {drawing && coords.length > 0 && (
-          <button type="button" className="button button-secondary button-sm" onClick={() => {
-            const next = coords.slice(0, -1);
-            setCoords(next);
-            onChange(next.length >= 3 ? next : null);
-          }}>
+          <button
+            type="button"
+            className="button button-secondary button-sm"
+            onClick={() => {
+              const next = coords.slice(0, -1);
+              setCoords(next);
+              onChange(next.length >= 3 ? next : null);
+            }}
+          >
             Undo last point
           </button>
         )}
         {drawing && (
-          <button type="button" className="button button-sm" disabled={coords.length < 3} onClick={() => setDrawing(false)}>
+          <button
+            type="button"
+            className="button button-sm"
+            disabled={coords.length < 3}
+            onClick={() => setDrawing(false)}
+          >
             Finish area
           </button>
         )}

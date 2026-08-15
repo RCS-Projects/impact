@@ -1,6 +1,7 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { getCsrfToken } from '@/lib/csrf';
 import { FormBuilder } from '@/components/admin/form-builder';
 import type { FormField } from '@/server/schema/form-schema';
@@ -59,7 +60,11 @@ export function TemplateEditor({ templateKey }: { templateKey: string }) {
   }
 
   if (!template) {
-    return <main className="shell"><p className="hint">Loading template...</p></main>;
+    return (
+      <main className="shell">
+        <p className="hint">Loading template...</p>
+      </main>
+    );
   }
 
   return (
@@ -67,13 +72,19 @@ export function TemplateEditor({ templateKey }: { templateKey: string }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
         <div style={{ flex: 1 }}>
           <p className="eyebrow">
-            <a href="/admin/templates" style={{ color: 'inherit' }}>Templates</a>
-            {' '}/ {template.key}
+            <Link href="/admin/templates" style={{ color: 'inherit' }}>
+              Templates
+            </Link>{' '}
+            / {template.key}
           </p>
           <h1 className="page-title">{template.title}</h1>
         </div>
         <div className="buttons" style={{ marginTop: 0 }}>
-          <button type="button" className="button button-secondary button-sm" onClick={() => router.push('/admin/templates')}>
+          <button
+            type="button"
+            className="button button-secondary button-sm"
+            onClick={() => router.push('/admin/templates')}
+          >
             Back
           </button>
         </div>
@@ -92,7 +103,10 @@ export function TemplateEditor({ templateKey }: { templateKey: string }) {
             Title
             <input
               value={template.title}
-              onChange={(e) => { setTemplate({ ...template, title: e.target.value }); setDirty(true); }}
+              onChange={(e) => {
+                setTemplate({ ...template, title: e.target.value });
+                setDirty(true);
+              }}
               maxLength={160}
             />
           </label>
@@ -100,7 +114,10 @@ export function TemplateEditor({ templateKey }: { templateKey: string }) {
             Description
             <textarea
               value={template.description ?? ''}
-              onChange={(e) => { setTemplate({ ...template, description: e.target.value || null }); setDirty(true); }}
+              onChange={(e) => {
+                setTemplate({ ...template, description: e.target.value || null });
+                setDirty(true);
+              }}
               maxLength={4000}
               rows={2}
             />
@@ -112,7 +129,10 @@ export function TemplateEditor({ templateKey }: { templateKey: string }) {
         <h2>Form fields</h2>
         <FormBuilder
           value={template.schema.fields}
-          onChange={(fields) => { setTemplate({ ...template, schema: { ...template.schema, fields } }); setDirty(true); }}
+          onChange={(fields) => {
+            setTemplate({ ...template, schema: { ...template.schema, fields } });
+            setDirty(true);
+          }}
         />
       </section>
 

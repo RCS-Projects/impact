@@ -9,16 +9,18 @@ import { getPublicIncident } from '@/server/services/incidents.service';
 export const dynamic = 'force-dynamic';
 
 interface PageProps {
-  params: { reference: string };
+  params: Promise<{ reference: string }>;
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const incident = await getPublicIncident(params.reference);
+  const { reference } = await params;
+  const incident = await getPublicIncident(reference);
   return { title: incident ? `Report — ${incident.title}` : 'Submit a report' };
 }
 
 export default async function ReportPage({ params }: PageProps) {
-  const incident = await getPublicIncident(params.reference);
+  const { reference } = await params;
+  const incident = await getPublicIncident(reference);
   if (!incident) notFound();
   const schema = incidentFormSchema.parse(incident.formSchema);
   const env = getEnv();
@@ -30,7 +32,7 @@ export default async function ReportPage({ params }: PageProps) {
       {incident.status !== 'live' ? (
         <p className="notice notice-warn">
           This incident is closed and is no longer accepting reports.{' '}
-          <a href={`/map/${params.reference}`}>View the map</a>
+          <a href={`/map/${reference}`}>View the map</a>
         </p>
       ) : (
         <>
@@ -40,7 +42,7 @@ export default async function ReportPage({ params }: PageProps) {
           </p>
           <div className="forms-grid" style={{ marginTop: '1.25rem' }}>
             <ReportForm
-              reference={params.reference}
+              reference={reference}
               fields={schema.fields as FieldView[]}
               center={[incident.longitude, incident.latitude]}
               reportingArea={incident.reportingArea}

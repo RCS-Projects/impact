@@ -18,8 +18,16 @@ const choiceSchema = z.object({
 const formFieldInput = z.object({
   key: z.string().regex(/^[a-z][a-z0-9_]{0,63}$/),
   type: z.enum([
-    'short_text', 'long_text', 'single_select', 'multi_select',
-    'radio', 'checkbox', 'boolean', 'datetime', 'info', 'photo',
+    'short_text',
+    'long_text',
+    'single_select',
+    'multi_select',
+    'radio',
+    'checkbox',
+    'boolean',
+    'datetime',
+    'info',
+    'photo',
   ]),
   label: z.string().min(1).max(160),
   helpText: z.string().max(500).optional(),
@@ -46,27 +54,29 @@ const updateInput = z.object({
 });
 
 export const GET = handleApi(
-  async (_request: NextRequest, { params }: { params: { key: string } }) => {
+  async (_request: NextRequest, { params }: { params: Promise<{ key: string }> }) => {
+    const { key } = await params;
     await requireAdmin();
     const db = getSql();
-    const template = await templatesRepo.findByKey(db, params.key);
+    const template = await templatesRepo.findByKey(db, key);
     if (!template) throw AppError.notFound('Template not found');
     return NextResponse.json({ template }, { headers: noStore() });
   },
 );
 
 export const PATCH = handleApi(
-  async (request: NextRequest, { params }: { params: { key: string } }) => {
+  async (request: NextRequest, { params }: { params: Promise<{ key: string }> }) => {
+    const { key } = await params;
     const admin = await requireAdminMutation(request);
     const data = updateInput.parse(await request.json().catch(() => null));
     const db = getSql();
-    const existing = await templatesRepo.findByKey(db, params.key);
+    const existing = await templatesRepo.findByKey(db, key);
     if (!existing) throw AppError.notFound('Template not found');
     const parsed = data.schema ? incidentFormSchema.parse(data.schema) : existing.schema;
     await templatesRepo.upsert(db, {
-      key: params.key,
+      key,
       title: data.title ?? existing.title,
-      description: data.description !== undefined ? (data.description || null) : existing.description,
+      description: data.description !== undefined ? data.description || null : existing.description,
       schema: parsed,
     });
     return NextResponse.json({ ok: true }, { headers: noStore() });
@@ -74,12 +84,13 @@ export const PATCH = handleApi(
 );
 
 export const DELETE = handleApi(
-  async (_request: NextRequest, { params }: { params: { key: string } }) => {
+  async (_request: NextRequest, { params }: { params: Promise<{ key: string }> }) => {
+    const { key } = await params;
     await requireAdminMutation(_request);
     const db = getSql();
-    const existing = await templatesRepo.findByKey(db, params.key);
+    const existing = await templatesRepo.findByKey(db, key);
     if (!existing) throw AppError.notFound('Template not found');
-    await templatesRepo.remove(db, params.key);
+    await templatesRepo.remove(db, key);
     return NextResponse.json({ ok: true }, { headers: noStore() });
   },
 );

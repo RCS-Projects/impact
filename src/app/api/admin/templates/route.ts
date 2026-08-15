@@ -17,8 +17,16 @@ const choiceSchema = z.object({
 const formFieldInput = z.object({
   key: z.string().regex(/^[a-z][a-z0-9_]{0,63}$/),
   type: z.enum([
-    'short_text', 'long_text', 'single_select', 'multi_select',
-    'radio', 'checkbox', 'boolean', 'datetime', 'info', 'photo',
+    'short_text',
+    'long_text',
+    'single_select',
+    'multi_select',
+    'radio',
+    'checkbox',
+    'boolean',
+    'datetime',
+    'info',
+    'photo',
   ]),
   label: z.string().min(1).max(160),
   helpText: z.string().max(500).optional(),
@@ -34,7 +42,11 @@ const formFieldInput = z.object({
 });
 
 const createInput = z.object({
-  key: z.string().min(1).max(80).regex(/^[a-z][a-z0-9-]{0,79}$/),
+  key: z
+    .string()
+    .min(1)
+    .max(80)
+    .regex(/^[a-z][a-z0-9-]{0,79}$/),
   title: z.string().min(1).max(160),
   description: z.string().max(4000).optional(),
   schema: z.object({

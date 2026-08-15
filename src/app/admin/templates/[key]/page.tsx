@@ -7,6 +7,7 @@ export const metadata: Metadata = {
   title: 'Edit template . Impact',
 };
 
-export default async function TemplateEditorPage({ params }: { params: { key: string } }) {
-  return <TemplateEditor templateKey={params.key} />;
+export default async function TemplateEditorPage({ params }: { params: Promise<{ key: string }> }) {
+  const { key } = await params;
+  return <TemplateEditor templateKey={key} />;
 }

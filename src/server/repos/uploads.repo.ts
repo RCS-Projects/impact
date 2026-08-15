@@ -33,12 +33,7 @@ export function findForReport(db: postgres.Sql, ids: string[], reportId: string)
   `;
 }
 
-export function claim(
-  db: postgres.Sql,
-  ids: string[],
-  claimHash: string,
-  reportId: string,
-) {
+export function claim(db: postgres.Sql, ids: string[], claimHash: string, reportId: string) {
   return db<{ id: string }[]>`
     UPDATE uploads
     SET report_id = ${reportId}, expires_at = NULL

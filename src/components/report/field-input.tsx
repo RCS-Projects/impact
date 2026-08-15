@@ -183,7 +183,12 @@ export function FieldInput({ field, defaultValue }: { field: FieldView; defaultV
         </label>
       );
     case 'photo': {
-      const existing = defaultValue as { uploadId?: string; url?: string; width?: number; height?: number } | null;
+      const existing = defaultValue as {
+        uploadId?: string;
+        url?: string;
+        width?: number;
+        height?: number;
+      } | null;
       return (
         <label className="field" htmlFor={`f-${field.key}`}>
           {field.label}
@@ -198,7 +203,12 @@ export function FieldInput({ field, defaultValue }: { field: FieldView; defaultV
               className="photo-preview"
             />
           )}
-          <input id={`f-${field.key}`} name={field.key} type="file" accept="image/jpeg,image/png,image/webp" />
+          <input
+            id={`f-${field.key}`}
+            name={field.key}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+          />
         </label>
       );
     }

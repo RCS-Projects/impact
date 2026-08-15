@@ -99,7 +99,8 @@ export async function search(query: string): Promise<{ results: GeocodeResult[] 
         undefined,
     })),
   };
-  await geocodeCacheRepo.set(db, key, value, 86_400);
+  // Search responses can contain full address strings; retain them only briefly.
+  await geocodeCacheRepo.set(db, key, value, 300);
   return value;
 }
 

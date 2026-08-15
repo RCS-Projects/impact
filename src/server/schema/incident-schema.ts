@@ -57,16 +57,24 @@ export const reportingAreaSchema = z.unknown().superRefine((value, ctx) => {
     area.type === 'Polygon'
       ? [area.coordinates]
       : area.type === 'MultiPolygon'
-        ? (Array.isArray(area.coordinates) ? area.coordinates : [])
+        ? Array.isArray(area.coordinates)
+          ? area.coordinates
+          : []
         : [];
   if (!['Polygon', 'MultiPolygon'].includes(String(area.type)) || polygons.length === 0) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Reporting area must be a Polygon or MultiPolygon' });
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Reporting area must be a Polygon or MultiPolygon',
+    });
     return;
   }
   let vertices = 0;
   for (const polygon of polygons) {
     if (!Array.isArray(polygon) || polygon.length === 0 || !polygon.every(validRing)) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Reporting area rings must be closed and valid' });
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Reporting area rings must be closed and valid',
+      });
       return;
     }
     vertices += polygon.reduce((sum, ring) => sum + (ring as Position[]).length, 0);

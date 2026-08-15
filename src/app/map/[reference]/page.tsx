@@ -10,12 +10,13 @@ import { getEnv } from '@/server/env';
 export const dynamic = 'force-dynamic';
 
 interface PageProps {
-  params: { reference: string };
+  params: Promise<{ reference: string }>;
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const incident = await getPublicIncident(params.reference);
-  const url = `${getEnv().APP_URL}/map/${params.reference}`;
+  const { reference } = await params;
+  const incident = await getPublicIncident(reference);
+  const url = `${getEnv().APP_URL}/map/${reference}`;
   const title = incident?.title ?? 'Incident map';
   const description = incident?.description ?? 'Crowdsourced community incident map.';
   return {
@@ -36,7 +37,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function IncidentMapPage({ params }: PageProps) {
-  const incident = await getPublicIncident(params.reference);
+  const { reference } = await params;
+  const incident = await getPublicIncident(reference);
   if (!incident) notFound();
   const schema = incidentFormSchema.parse(incident.formSchema);
   const filters = deriveFilters(schema);
@@ -44,7 +46,7 @@ export default async function IncidentMapPage({ params }: PageProps) {
 
   return (
     <IncidentMapView
-      reference={params.reference}
+      reference={reference}
       title={incident.title}
       description={incident.description}
       incidentStatus={incident.status === 'live' ? 'live' : 'closed'}

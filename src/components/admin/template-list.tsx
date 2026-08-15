@@ -40,7 +40,18 @@ export function TemplateList() {
       body: JSON.stringify({
         key: newKey,
         title: newTitle,
-        schema: { version: 1, fields: [{ key: 'description', type: 'long_text', label: 'Description', required: false, order: 0 }] },
+        schema: {
+          version: 1,
+          fields: [
+            {
+              key: 'description',
+              type: 'long_text',
+              label: 'Description',
+              required: false,
+              order: 0,
+            },
+          ],
+        },
       }),
     });
     if (!res.ok) {
@@ -60,13 +71,19 @@ export function TemplateList() {
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
         <div style={{ flex: 1 }}>
           <p className="eyebrow">
-            <a href="/admin" style={{ color: 'inherit' }}>Admin</a>
-            {' '}/ Templates
+            <a href="/admin" style={{ color: 'inherit' }}>
+              Admin
+            </a>{' '}
+            / Templates
           </p>
           <h1 className="page-title">Schema templates</h1>
         </div>
         <div className="buttons" style={{ marginTop: 0 }}>
-          <button type="button" className="button button-sm" onClick={() => setShowCreate(!showCreate)}>
+          <button
+            type="button"
+            className="button button-sm"
+            onClick={() => setShowCreate(!showCreate)}
+          >
             {showCreate ? 'Cancel' : 'New template'}
           </button>
         </div>
@@ -99,7 +116,12 @@ export function TemplateList() {
                 />
               </label>
             </div>
-            <button type="button" className="button" style={{ alignSelf: 'flex-start' }} onClick={() => void createTemplate()}>
+            <button
+              type="button"
+              className="button"
+              style={{ alignSelf: 'flex-start' }}
+              onClick={() => void createTemplate()}
+            >
               Create template
             </button>
           </div>
@@ -127,10 +149,15 @@ export function TemplateList() {
                   <tr key={t.key}>
                     <td style={{ fontFamily: 'monospace' }}>{t.key}</td>
                     <td>{t.title}</td>
-                    <td>{fieldCount} field{fieldCount !== 1 ? 's' : ''}</td>
+                    <td>
+                      {fieldCount} field{fieldCount !== 1 ? 's' : ''}
+                    </td>
                     <td>
                       <div style={{ display: 'flex', gap: '0.4rem' }}>
-                        <a className="button button-secondary button-sm" href={`/admin/templates/${t.key}`}>
+                        <a
+                          className="button button-secondary button-sm"
+                          href={`/admin/templates/${t.key}`}
+                        >
                           Edit
                         </a>
                         <button
@@ -157,7 +184,9 @@ export function TemplateList() {
               })}
               {templates.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="hint">No templates yet.</td>
+                  <td colSpan={4} className="hint">
+                    No templates yet.
+                  </td>
                 </tr>
               )}
             </tbody>

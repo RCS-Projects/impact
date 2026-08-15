@@ -1,4 +1,3 @@
-
 export const dynamic = 'force-static';
 
 export default function LandingPage() {
@@ -24,7 +23,12 @@ export default function LandingPage() {
         </p>
       </section>
       <div className="buttons">
-        <a className="button" href="https://renfrewcountyscanner.com" target="_blank" rel="noreferrer">
+        <a
+          className="button"
+          href="https://renfrewcountyscanner.com"
+          target="_blank"
+          rel="noreferrer"
+        >
           Renfrew County Scanner
         </a>
       </div>

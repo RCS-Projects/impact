@@ -62,9 +62,13 @@ export function LocationPicker({
       const point = { latitude: event.lngLat.lat, longitude: event.lngLat.lng };
       setMarker(map, point);
       try {
-        const res = await fetch(`/api/geocode/reverse?lat=${point.latitude}&lon=${point.longitude}`);
+        const res = await fetch(
+          `/api/geocode/reverse?lat=${point.latitude}&lon=${point.longitude}`,
+        );
         if (res.ok) {
-          const data = (await res.json()) as { result: { label?: string; placeLabel?: string } | null };
+          const data = (await res.json()) as {
+            result: { label?: string; placeLabel?: string } | null;
+          };
           if (data.result?.placeLabel) {
             setMarker(map, { ...point, placeLabel: data.result.placeLabel });
           }
@@ -142,7 +146,10 @@ export function LocationPicker({
         setSearchError('Address search unavailable');
       }
     }, 350);
-    return () => { clearTimeout(timer); controller.abort(); };
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
   }, [query]);
 
   function geolocate() {
@@ -205,10 +212,19 @@ export function LocationPicker({
         <button type="button" className="button button-secondary button-sm" onClick={geolocate}>
           Use my location
         </button>
-        <button type="button" className="button button-secondary button-sm" onClick={() => {
-          const map = mapRef.current;
-          if (map) setMarker(map, { latitude: center[1], longitude: center[0], placeLabel: 'Map centre' });
-        }}>
+        <button
+          type="button"
+          className="button button-secondary button-sm"
+          onClick={() => {
+            const map = mapRef.current;
+            if (map)
+              setMarker(map, {
+                latitude: center[1],
+                longitude: center[0],
+                placeLabel: 'Map centre',
+              });
+          }}
+        >
           Use map centre
         </button>
       </div>

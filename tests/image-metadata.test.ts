@@ -39,8 +39,14 @@ describe('sanitizeImage', () => {
   it('rejects forged, truncated, and unsupported image data', async () => {
     await expect(sanitizeImage(Buffer.from('not a jpeg'))).rejects.toThrow();
     await expect(sanitizeImage(Buffer.from([0xff, 0xd8, 0xff, 0xe0]))).rejects.toThrow();
-    await expect(sanitizeImage(await sharp({
-      create: { width: 10, height: 10, channels: 3, background: 'red' },
-    }).tiff().toBuffer())).rejects.toThrow(/Unsupported/);
+    await expect(
+      sanitizeImage(
+        await sharp({
+          create: { width: 10, height: 10, channels: 3, background: 'red' },
+        })
+          .tiff()
+          .toBuffer(),
+      ),
+    ).rejects.toThrow(/Unsupported/);
   });
 });

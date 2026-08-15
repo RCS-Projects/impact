@@ -11,8 +11,9 @@ const connectionsByIp = new Map<string, number>();
 
 export const GET = async (
   _request: NextRequest,
-  { params }: { params: { reference: string } },
+  { params }: { params: Promise<{ reference: string }> },
 ) => {
+  const { reference } = await params;
   const ip = clientIp(_request);
   const current = connectionsByIp.get(ip) ?? 0;
   const total = [...connectionsByIp.values()].reduce((sum, count) => sum + count, 0);
@@ -22,12 +23,11 @@ export const GET = async (
       headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
     });
   }
-  const incident = await getPublicIncident(params.reference);
+  const incident = await getPublicIncident(reference);
   if (!incident) {
     return new Response('Incident not found', { status: 404 });
   }
 
-  const reference = params.reference;
   const encoder = new TextEncoder();
   connectionsByIp.set(ip, current + 1);
 
@@ -69,9 +69,12 @@ export const GET = async (
       _request.signal.addEventListener('abort', () => {
         if (heartbeat) clearInterval(heartbeat);
         cleanup();
-        try { controller.close(); } catch { /* already closed */ }
+        try {
+          controller.close();
+        } catch {
+          /* already closed */
+        }
       });
-
     },
   });
 

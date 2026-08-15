@@ -11,10 +11,11 @@ const input = z.object({
 });
 
 export const POST = handleApi(
-  async (request: NextRequest, { params }: { params: { id: string } }) => {
+  async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+    const { id } = await params;
     const admin = await requireAdminMutation(request);
     const data = input.parse(await request.json().catch(() => null));
-    await applyAction(params.id, data.action, admin, data.note);
+    await applyAction(id, data.action, admin, data.note);
     return NextResponse.json({ ok: true }, { headers: noStore() });
   },
 );

@@ -19,18 +19,19 @@ const submitInput = z.object({
 });
 
 export const POST = handleApi(
-  async (request: NextRequest, { params }: { params: { reference: string } }) => {
+  async (request: NextRequest, { params }: { params: Promise<{ reference: string }> }) => {
+    const { reference } = await params;
     const data = submitInput.parse(await request.json().catch(() => null));
     const result = await createReport({
-      reference: params.reference,
+      reference,
       latitude: data.latitude,
       longitude: data.longitude,
       privacy: data.privacy,
       answers: data.answers,
       placeLabel: data.placeLabel,
       turnstileToken: data.turnstileToken,
-      browserTokenCookie: cookies().get('impact_browser_token')?.value ?? null,
-      uploadClaimToken: cookies().get('impact_upload_claim')?.value ?? null,
+      browserTokenCookie: (await cookies()).get('impact_browser_token')?.value ?? null,
+      uploadClaimToken: (await cookies()).get('impact_upload_claim')?.value ?? null,
       ip: clientIp(request),
       geometry: data.geometry,
     });
@@ -70,7 +71,8 @@ const STATUS_VALUES = new Set([
 ]);
 
 export const GET = handleApi(
-  async (request: NextRequest, { params }: { params: { reference: string } }) => {
+  async (request: NextRequest, { params }: { params: Promise<{ reference: string }> }) => {
+    const { reference } = await params;
     const bounds = boundsInput.safeParse(Object.fromEntries(request.nextUrl.searchParams));
     if (
       !bounds.success ||
@@ -96,7 +98,7 @@ export const GET = handleApi(
     }
 
     const result = await queryPublicReports({
-      reference: params.reference,
+      reference,
       bounds: bounds.data,
       statuses,
       fieldFilters,

@@ -19,7 +19,16 @@ export interface QueueReportRow {
 
 export function listQueue(
   db: postgres.Sql,
-  options: { incidentId?: string; statuses?: ReportStatus[]; privacy?: string; suspiciousReason?: string; hasPhoto?: boolean; since?: string; limit?: number; offset?: number },
+  options: {
+    incidentId?: string;
+    statuses?: ReportStatus[];
+    privacy?: string;
+    suspiciousReason?: string;
+    hasPhoto?: boolean;
+    since?: string;
+    limit?: number;
+    offset?: number;
+  },
 ) {
   const limit = Math.min(options.limit ?? 25, 100);
   const offset = options.offset ?? 0;
@@ -28,8 +37,12 @@ export function listQueue(
     options.statuses && options.statuses.length > 0
       ? db`r.status::text = ANY(${options.statuses})`
       : db`TRUE`;
-  const privacyFilter = options.privacy ? db`r.location_privacy::text = ${options.privacy}` : db`TRUE`;
-  const reasonFilter = options.suspiciousReason ? db`r.suspicious_reasons ? ${options.suspiciousReason}` : db`TRUE`;
+  const privacyFilter = options.privacy
+    ? db`r.location_privacy::text = ${options.privacy}`
+    : db`TRUE`;
+  const reasonFilter = options.suspiciousReason
+    ? db`r.suspicious_reasons ? ${options.suspiciousReason}`
+    : db`TRUE`;
   const photoFilter = options.hasPhoto ? db`r.answers::text LIKE '%"url"%'` : db`TRUE`;
   const sinceFilter = options.since ? db`r.created_at >= ${options.since}::timestamptz` : db`TRUE`;
   return db<QueueReportRow[]>`
@@ -50,15 +63,26 @@ export function listQueue(
 
 export function countQueue(
   db: postgres.Sql,
-  options: { incidentId?: string; statuses?: ReportStatus[]; privacy?: string; suspiciousReason?: string; hasPhoto?: boolean; since?: string },
+  options: {
+    incidentId?: string;
+    statuses?: ReportStatus[];
+    privacy?: string;
+    suspiciousReason?: string;
+    hasPhoto?: boolean;
+    since?: string;
+  },
 ) {
   const incidentFilter = options.incidentId ? db`r.incident_id = ${options.incidentId}` : db`TRUE`;
   const statusFilter =
     options.statuses && options.statuses.length > 0
       ? db`r.status::text = ANY(${options.statuses})`
       : db`TRUE`;
-  const privacyFilter = options.privacy ? db`r.location_privacy::text = ${options.privacy}` : db`TRUE`;
-  const reasonFilter = options.suspiciousReason ? db`r.suspicious_reasons ? ${options.suspiciousReason}` : db`TRUE`;
+  const privacyFilter = options.privacy
+    ? db`r.location_privacy::text = ${options.privacy}`
+    : db`TRUE`;
+  const reasonFilter = options.suspiciousReason
+    ? db`r.suspicious_reasons ? ${options.suspiciousReason}`
+    : db`TRUE`;
   const photoFilter = options.hasPhoto ? db`r.answers::text LIKE '%"url"%'` : db`TRUE`;
   const sinceFilter = options.since ? db`r.created_at >= ${options.since}::timestamptz` : db`TRUE`;
   return db<{ total: number }[]>`

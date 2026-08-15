@@ -136,6 +136,15 @@ style inventory is fully migrated.
 
 ## Deployment smoke test
 
+Run the local/server preflight before starting a production deployment:
+
+```bash
+npm run preflight
+```
+
+It validates production environment requirements, PostGIS availability, and writable
+upload storage without printing secrets.
+
 After every release, verify these endpoints from outside the container:
 
 ```bash

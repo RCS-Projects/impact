@@ -90,7 +90,13 @@ export function ReportEditPage({ reportId, token }: { reportId: string; token: s
               geometryMode={payload.incident.reportGeometryMode}
             />
           )}
-          <div style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid var(--border)' }}>
+          <div
+            style={{
+              marginTop: '1.5rem',
+              paddingTop: '1rem',
+              borderTop: '1px solid var(--border)',
+            }}
+          >
             <button
               type="button"
               className="button button-sm"

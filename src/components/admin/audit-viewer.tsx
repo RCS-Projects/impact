@@ -54,8 +54,10 @@ export function AuditViewer() {
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
         <div style={{ flex: 1 }}>
           <p className="eyebrow">
-            <a href="/admin" style={{ color: 'inherit' }}>Admin</a>
-            {' '}/ Audit log
+            <a href="/admin" style={{ color: 'inherit' }}>
+              Admin
+            </a>{' '}
+            / Audit log
           </p>
           <h1 className="page-title">Audit log</h1>
         </div>
@@ -64,7 +66,10 @@ export function AuditViewer() {
             Filter by incident ID
             <input
               value={filter}
-              onChange={(e) => { setFilter(e.target.value); setPage(0); }}
+              onChange={(e) => {
+                setFilter(e.target.value);
+                setPage(0);
+              }}
               placeholder="UUID (optional)"
               style={{ maxWidth: 280 }}
             />
@@ -102,9 +107,7 @@ export function AuditViewer() {
                     ) : null}
                   </td>
                   <td style={{ fontSize: '0.82rem' }}>
-                    {event.incidentTitle ?? (
-                      <span className="hint">-</span>
-                    )}
+                    {event.incidentTitle ?? <span className="hint">-</span>}
                   </td>
                   <td style={{ fontSize: '0.82rem' }}>
                     {Object.keys(event.metadata).length > 0 ? (
@@ -119,7 +122,9 @@ export function AuditViewer() {
               ))}
               {events.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="hint">No audit events found.</td>
+                  <td colSpan={5} className="hint">
+                    No audit events found.
+                  </td>
                 </tr>
               )}
             </tbody>

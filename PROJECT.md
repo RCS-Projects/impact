@@ -2,7 +2,7 @@
 
 > Last updated: 2026-08-14
 > Repository: github.com/renfrewcountyscanner/impact
-> Tech: Next.js 14 App Router, TypeScript strict, PostgreSQL/PostGIS 16, MapLibre GL, Docker
+> Tech: Next.js 15 App Router, TypeScript strict, PostgreSQL/PostGIS 16, MapLibre GL, Docker
 
 > Status note (2026-08-15): The original roadmap below predates the stabilization
 > work. Items marked as later are not authoritative; the current implementation
@@ -16,6 +16,7 @@
 ## What's Done
 
 ### M1 — Foundation (complete)
+
 - Full v2 rewrite with layered architecture (routes → services → repositories)
 - Dark ops-room UI (charcoal #0d1215, amber #f5a524)
 - Database schema v2 with PostGIS geography, audit_events, rate_limit_events, geocode_cache
@@ -31,10 +32,10 @@
 - Private report editing via tokenized URLs
 - Basic moderation (approve/flag/resolve/reject/remove)
 - Docker Compose deployment (PostgreSQL 16 + Next.js app)
-- 29/29 unit tests passing (geo, privacy, security, form-schema)
-- 13 integration tests (skipped in CI, require real DB)
+- Unit and PostGIS integration tests run in the Node 20 container; integration tests require PostGIS.
 
 ### M2 — Incident Management (complete)
+
 - Visual incident editor with all fields (title, description, coordinates, zoom, form schema, display settings)
 - PATCH API for incident updates
 - Hand-rolled polygon drawing editor (MapLibre draw, no plugin dependency)
@@ -46,6 +47,7 @@
 - Audit viewer page with paginated global event log
 
 ### M3 — Admin & Moderation (complete)
+
 - Admin user management (create, update role, delete users)
 - Two roles: admin (full access) and moderator (moderate reports only)
 - Moderation pagination with limit/offset/count
@@ -55,8 +57,9 @@
 - Audit viewer with corrected event labels for all event types
 
 ### M4 — Public Features (complete)
+
 - Photo upload system (upload API, image serving, photo field type)
-- EXIF/metadata stripping on upload (pure JS JPEG/WebP stripper)
+- Sharp decode/re-encode image sanitization with generated filenames and server-side media URLs
 - Public anonymous photo uploads with rate limiting (10/hour/IP)
 - CSV/JSON data export (admin-only, per-incident)
 - SSE real-time updates replacing 30s polling (with fallback)
@@ -68,6 +71,7 @@
 - ARCHIVED status with dedicated chip color
 
 ### Infrastructure (complete)
+
 - Environment schema validation (Zod, includes UPLOAD_DIR)
 - HSTS header in production
 - CSP headers (with unsafe-inline for Next.js compatibility)
@@ -77,29 +81,37 @@
 
 ---
 
-## What Should Be Done Later
+## Historical roadmap notes
+
+The following list is retained as historical context only. Current behavior is
+described in `docs/final-acceptance-report.md` and `docs/runbook.md`; do not use
+these old estimates as an implementation checklist.
 
 ### High Priority
 
 **1. Remove incident listing from public landing page**
 The landing page (/) currently lists all live and closed incidents publicly. It should be a static informational page only — no incident directory. Maps are accessed via direct links only.
+
 - File: `src/app/page.tsx`
 - Remove `listPublicAll()` call, remove incident card rendering, keep descriptive content
 - Cleanup: Delete unused `listPublicAll()` and `listPublicLive()` from service/repo layers
 
 **2. Default datetime fields to "now"**
 The "When did you observe this?" datetime field renders blank. It should default to the current date/time.
+
 - File: `src/components/report/field-input.tsx` line 177
 - When `defaultValue` is undefined (create mode), use `new Date().toISOString().slice(0, 16)`
 
 **3. Add Facebook share button**
 After report submission, give users a "Share on Facebook" option.
+
 - File: `src/components/report/report-form.tsx` (success state)
 - Add a Facebook share link using `https://www.facebook.com/sharer/sharer.php?u={url}`
 - Also: Add Open Graph meta tags to map pages for proper link previews
 
 **4. Share exact locations with external parties (e.g., police)**
 Currently only admin-role users can view exact (un-fuzzed) locations via the true-location endpoint. Need a way to share data with external parties without giving them full admin access.
+
 - Options:
   - A. Add a "viewer" role with read-only access to specific incidents including exact locations
   - B. Add a token-based sharing link (time-limited, per-incident)
@@ -108,11 +120,13 @@ Currently only admin-role users can view exact (un-fuzzed) locations via the tru
 
 **5. Fix SSE fallback memory leak**
 The EventSource onerror fallback creates a `setInterval` that's never cleared.
+
 - File: `src/components/map/incident-map-view.tsx` lines 267-270
 - Store interval in a ref, clear on unmount
 
 **6. Add React error boundary**
 No error boundary in layout.tsx — component crashes show Next.js default error page.
+
 - File: `src/app/layout.tsx`
 - Wrap `{children}` in an error boundary component
 
@@ -176,6 +190,7 @@ docs/                     # Architecture, security, runbook
 ```
 
 ### Key Patterns
+
 - **Thin routes → services → repositories** — no business logic in routes
 - **AppError + handleApi wrapper** — consistent error handling with HTTP status mapping
 - **CSRF double-submit** — cookie + header token on all admin mutations

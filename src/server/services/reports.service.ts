@@ -13,6 +13,7 @@ import { hashBrowserToken, hashContent, hmacIp } from '../security/hashing';
 import { approximatePoint, distanceMeters, PRIVACY_RADIUS_METERS } from '../security/privacy';
 import { newOpaqueToken, verifyEditToken, hashEditToken } from '../security/tokens';
 import * as captcha from './captcha.service';
+import { reverseGeocode } from './geocode.service';
 import * as rateLimit from './rate-limit.service';
 import { getPublicIncident } from './incidents.service';
 import { reportGeometrySchema, type ReportGeometry } from '../schema/report-geometry';
@@ -33,21 +34,29 @@ async function resolvePhotoAnswers(
   const ids = schema.fields
     .filter((field) => field.type === 'photo')
     .map((field) => answers[field.key])
-    .filter((value): value is { uploadId: string } => Boolean(value && typeof value === 'object' && 'uploadId' in value))
+    .filter((value): value is { uploadId: string } =>
+      Boolean(value && typeof value === 'object' && 'uploadId' in value),
+    )
     .map((value) => value.uploadId);
   const uniqueIds = [...new Set(ids)];
   if (uniqueIds.length === 0) return { answers, uploadIds: [] as string[] };
 
   const rowsById = new Map<string, Awaited<ReturnType<typeof uploadsRepo.findForClaim>>[number]>();
   if (claimToken) {
-    const rows = await uploadsRepo.findForClaim(db, uniqueIds, hashBrowserToken(claimToken), reportId);
+    const rows = await uploadsRepo.findForClaim(
+      db,
+      uniqueIds,
+      hashBrowserToken(claimToken),
+      reportId,
+    );
     for (const row of rows) rowsById.set(row.id, row);
   }
   if (reportId && rowsById.size < uniqueIds.length) {
     const rows = await uploadsRepo.findForReport(db, uniqueIds, reportId);
     for (const row of rows) rowsById.set(row.id, row);
   }
-  if (rowsById.size !== uniqueIds.length) throw AppError.forbidden('One or more photo uploads are not yours');
+  if (rowsById.size !== uniqueIds.length)
+    throw AppError.forbidden('One or more photo uploads are not yours');
 
   const output = { ...answers };
   for (const field of schema.fields) {
@@ -98,17 +107,30 @@ export async function createReport(
   }
 
   const schema = incidentFormSchema.parse(incident.formSchema);
-  const geometry = reportGeometrySchema.parse(input.geometry ?? { type: 'Point', coordinates: [input.longitude, input.latitude] });
+  const geometry = reportGeometrySchema.parse(
+    input.geometry ?? { type: 'Point', coordinates: [input.longitude, input.latitude] },
+  );
   const mode = incident.reportGeometryMode ?? 'point';
-  if (mode === 'point' && geometry.type !== 'Point') throw AppError.badRequest('This incident accepts point reports only');
-  if (mode === 'polygon' && geometry.type !== 'Polygon') throw AppError.badRequest('This incident accepts polygon reports only');
+  if (mode === 'point' && geometry.type !== 'Point')
+    throw AppError.badRequest('This incident accepts point reports only');
+  if (mode === 'polygon' && geometry.type !== 'Polygon')
+    throw AppError.badRequest('This incident accepts polygon reports only');
   const answers = validateAnswers(schema, input.answers);
-  const resolvedPhotos = await resolvePhotoAnswers(db, schema, answers, input.uploadClaimToken ?? null);
+  const resolvedPhotos = await resolvePhotoAnswers(
+    db,
+    schema,
+    answers,
+    input.uploadClaimToken ?? null,
+  );
+  const derivedPlaceLabel =
+    (await reverseGeocode(input.latitude, input.longitude))?.placeLabel ?? null;
 
   const privateWkt = pointWkt(input.longitude, input.latitude);
   if (geometry.type === 'Polygon') {
     if (!(await incidentsRepo.geofenceAllowsGeometry(db, incident.id, JSON.stringify(geometry))))
-      throw AppError.unprocessable('That area is invalid or outside this incident’s reporting area.');
+      throw AppError.unprocessable(
+        'That area is invalid or outside this incident’s reporting area.',
+      );
   } else if (!(await incidentsRepo.geofenceAllows(db, incident.id, privateWkt)))
     throw AppError.unprocessable(OUTSIDE_AREA_MESSAGE);
 
@@ -143,7 +165,7 @@ export async function createReport(
       incidentId: incident.id,
       schemaSnapshot: schema,
       answers: resolvedPhotos.answers,
-      placeLabel: input.placeLabel ?? null,
+      placeLabel: derivedPlaceLabel,
       privacy: input.privacy,
       publicPointWkt: pointWkt(publicPoint.longitude, publicPoint.latitude),
       reportGeometryGeoJson: JSON.stringify(geometry),
@@ -167,7 +189,7 @@ export async function createReport(
       if (claimed.length !== resolvedPhotos.uploadIds.length)
         throw AppError.forbidden('One or more photo uploads are no longer available');
     }
-    await reportsPrivateRepo.insertLocation(tx, id, privateWkt, input.placeLabel ?? null);
+    await reportsPrivateRepo.insertLocation(tx, id, privateWkt, derivedPlaceLabel);
     await auditRepo.record(tx, {
       incidentId: incident.id,
       reportId: id,
@@ -264,9 +286,14 @@ export async function updateReport(reportId: string, token: string, input: Updat
     );
 
   const schema = incidentFormSchema.parse(row.formSchema);
-  const geometry = reportGeometrySchema.parse(input.geometry ?? row.reportGeometry ?? { type: 'Point', coordinates: [input.longitude, input.latitude] });
-  if (row.reportGeometryMode === 'point' && geometry.type !== 'Point') throw AppError.badRequest('This incident accepts point reports only');
-  if (row.reportGeometryMode === 'polygon' && geometry.type !== 'Polygon') throw AppError.badRequest('This incident accepts polygon reports only');
+  const geometry = reportGeometrySchema.parse(
+    input.geometry ??
+      row.reportGeometry ?? { type: 'Point', coordinates: [input.longitude, input.latitude] },
+  );
+  if (row.reportGeometryMode === 'point' && geometry.type !== 'Point')
+    throw AppError.badRequest('This incident accepts point reports only');
+  if (row.reportGeometryMode === 'polygon' && geometry.type !== 'Polygon')
+    throw AppError.badRequest('This incident accepts polygon reports only');
   const answers = validateAnswers(schema, input.answers);
   const resolvedPhotos = await resolvePhotoAnswers(
     db,
@@ -275,11 +302,15 @@ export async function updateReport(reportId: string, token: string, input: Updat
     input.uploadClaimToken ?? null,
     reportId,
   );
+  const derivedPlaceLabel =
+    (await reverseGeocode(input.latitude, input.longitude))?.placeLabel ?? null;
 
   const privateWkt = pointWkt(input.longitude, input.latitude);
   if (geometry.type === 'Polygon') {
     if (!(await incidentsRepo.geofenceAllowsGeometry(db, row.incidentId, JSON.stringify(geometry))))
-      throw AppError.unprocessable('That area is invalid or outside this incident’s reporting area.');
+      throw AppError.unprocessable(
+        'That area is invalid or outside this incident’s reporting area.',
+      );
   } else if (!(await incidentsRepo.geofenceAllows(db, row.incidentId, privateWkt))) {
     throw AppError.unprocessable(OUTSIDE_AREA_MESSAGE);
   }
@@ -307,7 +338,7 @@ export async function updateReport(reportId: string, token: string, input: Updat
     publicPointWkt: pointWkt(publicPoint.longitude, publicPoint.latitude),
     radius,
     privatePointWkt: privateWkt,
-    placeLabel: input.placeLabel ?? null,
+    placeLabel: derivedPlaceLabel,
     suspiciousReasons: suspicious,
     uploadIds: resolvedPhotos.uploadIds,
     uploadClaimHash: input.uploadClaimToken ? hashBrowserToken(input.uploadClaimToken) : undefined,

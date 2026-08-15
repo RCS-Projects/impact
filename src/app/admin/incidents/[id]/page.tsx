@@ -10,8 +10,9 @@ export const metadata: Metadata = {
   title: 'Edit incident . Impact',
 };
 
-export default async function IncidentEditorPage({ params }: { params: { id: string } }) {
-  const token = cookies().get(SESSION_COOKIE)?.value;
+export default async function IncidentEditorPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const token = (await cookies()).get(SESSION_COOKIE)?.value;
   if (!token) {
     return (
       <main className="shell">
@@ -29,5 +30,5 @@ export default async function IncidentEditorPage({ params }: { params: { id: str
     );
   }
 
-  return <IncidentEditor incidentId={params.id} />;
+  return <IncidentEditor incidentId={id} />;
 }

@@ -15,20 +15,21 @@ const updateInput = z.object({
 });
 
 export const PATCH = handleApi(
-  async (request: NextRequest, { params }: { params: { id: string } }) => {
+  async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+    const { id } = await params;
     const admin = await requireAdminMutation(request);
     if (admin.role !== 'admin') throw AppError.forbidden('Administrators only');
-    if (params.id === admin.id) throw AppError.badRequest('Cannot change your own role');
+    if (id === admin.id) throw AppError.badRequest('Cannot change your own role');
     const data = updateInput.parse(await request.json().catch(() => null));
     const db = getSql();
     if (data.role) {
-      const changed = await adminsRepo.updateRole(db, params.id, data.role);
+      const changed = await adminsRepo.updateRole(db, id, data.role);
       if (!changed) throw AppError.notFound('User not found');
       await auditRepo.record(db, {
         actorType: 'admin',
         actorId: admin.id,
         eventType: 'admin_role_changed',
-        metadata: { targetId: params.id, newRole: data.role },
+        metadata: { targetId: id, newRole: data.role },
       });
     }
     return NextResponse.json({ ok: true }, { headers: noStore() });
@@ -36,22 +37,23 @@ export const PATCH = handleApi(
 );
 
 export const DELETE = handleApi(
-  async (_request: NextRequest, { params }: { params: { id: string } }) => {
+  async (_request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+    const { id } = await params;
     const admin = await requireAdmin();
     if (admin.role !== 'admin') throw AppError.forbidden('Administrators only');
-    if (params.id === admin.id) throw AppError.badRequest('Cannot delete your own account');
+    if (id === admin.id) throw AppError.badRequest('Cannot delete your own account');
     const db = getSql();
-    const user = await adminsRepo.findById(db, params.id);
+    const user = await adminsRepo.findById(db, id);
     if (!user) throw AppError.notFound('User not found');
     const count = await adminsRepo.count(db);
     if (count <= 1) throw AppError.badRequest('Cannot delete the last administrator');
-    const removed = await adminsRepo.remove(db, params.id);
+    const removed = await adminsRepo.remove(db, id);
     if (!removed) throw AppError.notFound('User not found');
     await auditRepo.record(db, {
       actorType: 'admin',
       actorId: admin.id,
       eventType: 'admin_removed',
-      metadata: { targetId: params.id, email: user.email },
+      metadata: { targetId: id, email: user.email },
     });
     return NextResponse.json({ ok: true }, { headers: noStore() });
   },
