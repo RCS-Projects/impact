@@ -23,8 +23,12 @@ let cached: Env | null = null;
 export function getEnv(): Env {
   if (cached) return cached;
   const env = schema.parse(process.env);
-  if (runtimeModeOf(env) === 'production' && env.DEVELOPMENT_TURNSTILE_BYPASS === 'true')
-    throw new Error('Development Turnstile bypass is forbidden in production');
+  if (runtimeModeOf(env) === 'production') {
+    if (env.DEVELOPMENT_TURNSTILE_BYPASS === 'true')
+      throw new Error('Development Turnstile bypass is forbidden in production');
+    if (!env.TURNSTILE_SITE_KEY || !env.TURNSTILE_SECRET_KEY)
+      throw new Error('Production requires real Turnstile site and secret keys');
+  }
   cached = env;
   return env;
 }

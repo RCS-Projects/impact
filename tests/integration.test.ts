@@ -27,6 +27,10 @@ if (dbUrl) {
   }
 }
 
+if (process.env.CI === 'true' && !available) {
+  throw new Error('PostGIS integration database is required in CI; refusing to skip integration tests');
+}
+
 describe.runIf(available)('PostGIS integration', () => {
   const sql = postgres(dbUrl!, { max: 2 });
 
