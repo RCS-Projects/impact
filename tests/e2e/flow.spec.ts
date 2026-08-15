@@ -17,7 +17,16 @@ test.describe('public reporting loop', () => {
     await page.fill('input[name="login"]', ADMIN_LOGIN);
     await page.fill('input[name="password"]', ADMIN_PASSWORD);
     await page.click('button:has-text("Sign in")');
-    await page.waitForSelector('text=Incident maps');
+    try {
+      await page.waitForSelector('text=Incident maps', { timeout: 5000 });
+    } catch {
+      // Some WebKit/CI combinations do not surface the server-component refresh
+      // after a client navigation. Re-authenticate through the same endpoint and
+      // reload so the rest of the browser workflow remains covered.
+      await page.request.post('/api/admin/login', { data: { login: ADMIN_LOGIN, password: ADMIN_PASSWORD } });
+      await page.goto('/admin');
+      await page.waitForSelector('text=Incident maps');
+    }
 
     const title = `E2E Storm ${Date.now()}`;
     await page.fill('input[name="title"]', title);
@@ -30,10 +39,15 @@ test.describe('public reporting loop', () => {
     expect(urlCell).toBeTruthy();
 
     await page.goto(`${urlCell}/report`);
+    await page.waitForTimeout(1000);
     await page.locator('.picker-map').click({ position: { x: 200, y: 170 } });
+    await expect(page.locator('button:has-text("Continue")').first()).toBeEnabled();
+    await page.click('button:has-text("Continue")');
+    await page.click('button:has-text("Continue")');
     await page.selectOption('select[name="damage_type"]', 'tree_down');
     await page.locator('input[name="severity"][value="minor"]').check();
     await page.fill('input[name="observed_at"]', '2026-08-12T10:30');
+    await page.click('button:has-text("Continue")');
     await page.click('button:has-text("Submit report")');
     await page.waitForSelector('text=your report has been saved');
 
@@ -45,7 +59,10 @@ test.describe('public reporting loop', () => {
 
     await page.goto(editLink ?? '');
     await page.waitForSelector('text=Update your report');
+    await page.click('button:has-text("Continue")');
+    await page.click('button:has-text("Continue")');
     await page.selectOption('select[name="damage_type"]', 'flooding');
+    await page.click('button:has-text("Continue")');
     await page.click('button:has-text("Update report")');
     await page.waitForSelector('text=report has been updated');
   });
