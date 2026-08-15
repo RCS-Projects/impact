@@ -64,6 +64,16 @@ export function IncidentEditor({ incidentId }: { incidentId: string }) {
     void load();
   }, [load]);
 
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [dirty]);
+
   function updateField<K extends keyof IncidentData>(key: K, value: IncidentData[K]) {
     if (!incident) return;
     setIncident({ ...incident, [key]: value });
@@ -167,13 +177,16 @@ export function IncidentEditor({ incidentId }: { incidentId: string }) {
               Archive
             </button>
           )}
-          <button type="button" className="button button-secondary button-sm" onClick={() => router.push('/admin')}>
+          <button type="button" className="button button-secondary button-sm" onClick={() => {
+            if (dirty && !window.confirm('You have unsaved changes. Leave without saving?')) return;
+            router.push('/admin');
+          }}>
             Back
           </button>
         </div>
       </div>
 
-      {message && <p className="notice">{message}</p>}
+      {message && <p className="notice" role="status">{message}</p>}
 
       <section className="card">
         <h2>Details</h2>
@@ -418,14 +431,15 @@ export function IncidentEditor({ incidentId }: { incidentId: string }) {
         </dl>
       </section>
 
-      <div style={{ position: 'sticky', bottom: 0, padding: '0.6rem 0', background: 'var(--bg)' }}>
+      <div className="editor-save-bar" role="status" aria-live="polite">
+        <span>{saving ? 'Saving…' : dirty ? 'Unsaved changes' : message.startsWith('Saved:') ? 'Saved' : 'No unsaved changes'}</span>
         <button
           type="button"
           className="button"
           disabled={!dirty || saving}
           onClick={() => void save()}
         >
-          {saving ? 'Saving...' : dirty ? 'Save changes' : 'No changes'}
+          {saving ? 'Saving...' : 'Save changes'}
         </button>
       </div>
     </main>

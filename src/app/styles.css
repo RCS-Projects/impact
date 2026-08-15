@@ -690,3 +690,11 @@ table.data tr:last-child td {
     display: none;
   }
 }
+
+.report-steps { display:flex; gap:.5rem; list-style:none; padding:0; margin:0 0 1rem; counter-reset:step; flex-wrap:wrap; }
+.report-steps li { flex:1 1 9rem; padding:.55rem .7rem; border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text-faint); font-size:.85rem; }
+.report-steps li.active { border-color:var(--accent); color:var(--text); background:rgba(245,165,36,.08); }
+.report-steps li.complete { color:var(--ok); }
+.report-step-actions { display:flex; gap:.6rem; justify-content:flex-end; margin-top:1rem; }
+.review-card { border:1px solid var(--border); border-radius:var(--radius); padding:1rem; background:var(--bg-panel); }
+.editor-save-bar { position:sticky; bottom:0; z-index:3; display:flex; align-items:center; justify-content:space-between; gap:.75rem; padding:.6rem .75rem; background:var(--bg); border-top:1px solid var(--border); }

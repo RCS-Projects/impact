@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { FilterDefinition } from '@/shared/types';
-import { AppError } from '../errors';
+import { AppError } from '../app-error';
 
 export const fieldTypes = [
   'short_text',

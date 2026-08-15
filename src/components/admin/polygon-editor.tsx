@@ -154,7 +154,7 @@ export function PolygonEditor({
       <div
         ref={container}
         className="picker-map"
-        role="application"
+        role="img"
         aria-label="Draw the reporting area polygon on the map"
         style={{ cursor: drawing ? 'crosshair' : undefined }}
       />

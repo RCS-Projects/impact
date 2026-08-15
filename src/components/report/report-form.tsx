@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import type { FieldView, PickerPoint } from '@/shared/types';
 import { LocationPicker } from './location-picker';
 import { FieldInput, collectAnswers } from './field-input';
@@ -52,6 +52,9 @@ export function ReportForm({
   const [error, setError] = useState('');
   const [success, setSuccess] = useState<{ editUrl?: string; flagged: boolean } | null>(null);
   const [shareMessage, setShareMessage] = useState('');
+  const [step, setStep] = useState(0);
+  const [uploadingPhoto, setUploadingPhoto] = useState<string | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
 
   const needsExactConfirmation =
     mode === 'edit' && initial?.privacy === 'approximate' && privacy === 'exact';
@@ -67,6 +70,7 @@ export function ReportForm({
         const fileInput = document.getElementById(`f-${field.key}`) as HTMLInputElement | null;
         const file = fileInput?.files?.[0];
         if (file) {
+          setUploadingPhoto(field.key);
           const formData = new FormData();
           formData.append('file', file);
           const uploadRes = await fetch('/api/uploads', { method: 'POST', body: formData });
@@ -76,6 +80,7 @@ export function ReportForm({
           }
           const uploadData = (await uploadRes.json()) as { id: string };
           photoAnswers[field.key] = { uploadId: uploadData.id };
+          setUploadingPhoto(null);
         }
       }
       const answers = collectAnswers(fields, form);
@@ -207,18 +212,28 @@ export function ReportForm({
 
   return (
     <form
+      ref={formRef}
       className="report-form"
       action={handleSubmit}
       aria-label={mode === 'create' ? 'Submit a report' : 'Update your report'}
     >
-      <LocationPicker
-        center={center}
-        reportingArea={reportingArea}
-        value={point}
-        onChange={setPoint}
-      />
+      <ol className="report-steps" aria-label="Report steps">
+        {['Location', 'Privacy', 'Incident details', 'Review and submit'].map((label, index) => (
+          <li key={label} className={index === step ? 'active' : index < step ? 'complete' : ''}>{label}</li>
+        ))}
+      </ol>
 
-      <fieldset className="field">
+      {step === 0 && <>
+        <LocationPicker
+          center={center}
+          reportingArea={reportingArea}
+          value={point}
+          onChange={setPoint}
+        />
+        <p className="hint">Select an area, then use the map pin to adjust the location.</p>
+      </>}
+
+      {step === 1 && <fieldset className="field">
         <legend>Location privacy</legend>
         <div className="privacy-cards">
           <label className="privacy-card">
@@ -235,9 +250,9 @@ export function ReportForm({
             <span>Your exact pin is shown publicly. Choose this only if you are comfortable.</span>
           </label>
         </div>
-      </fieldset>
+      </fieldset>}
 
-      {needsExactConfirmation && (
+      {step === 1 && needsExactConfirmation && (
         <label className="notice notice-warn">
           <input
             type="checkbox"
@@ -248,13 +263,22 @@ export function ReportForm({
         </label>
       )}
 
-      {fields.map((field) => (
-        <FieldInput key={field.key} field={field} defaultValue={initial?.answers[field.key]} />
-      ))}
+      <div hidden={step !== 2}>
+        {fields.map((field) => (
+          <FieldInput key={field.key} field={field} defaultValue={initial?.answers[field.key]} />
+        ))}
+      </div>
 
-      {mode === 'create' && (
+      {step === 2 && mode === 'create' && (
         <TurnstileWidget siteKey={turnstileSiteKey} onToken={setTurnstileToken} />
       )}
+
+      {step === 3 && <section className="review-card" aria-labelledby="review-heading">
+        <h2 id="review-heading">Review your report</h2>
+        <p><strong>Location:</strong> {point?.placeLabel ?? 'Selected area on map'}</p>
+        <p><strong>Privacy:</strong> {privacy === 'approximate' ? 'Approximate (recommended)' : 'Exact location'}</p>
+        <p className="hint">Check your details before submitting. Your private edit link will be shown after a successful submission.</p>
+      </section>}
 
       {error && (
         <p className="notice notice-error" role="alert">
@@ -262,12 +286,20 @@ export function ReportForm({
         </p>
       )}
 
-      <button
-        className="button"
-        disabled={!point || submitting || (needsExactConfirmation && !confirmExact)}
-      >
-        {submitting ? 'Saving…' : mode === 'create' ? 'Submit report' : 'Update report'}
-      </button>
+      <div className="report-step-actions">
+        {step > 0 && <button type="button" className="button button-secondary" onClick={() => setStep((value) => value - 1)}>Back</button>}
+        {step < 3 ? (
+          <button type="button" className="button" disabled={step === 0 && !point || (step === 1 && needsExactConfirmation && !confirmExact)} onClick={() => {
+            if (step === 2) {
+              const invalid = formRef.current?.querySelector<HTMLElement>(':invalid');
+              if (invalid) { invalid.focus(); return; }
+            }
+            setStep((value) => value + 1);
+          }}>Continue</button>
+        ) : (
+          <button className="button" disabled={!point || submitting || uploadingPhoto !== null}>{submitting ? 'Saving…' : mode === 'create' ? 'Submit report' : 'Update report'}</button>
+        )}
+      </div>
       <p className="hint">
         Reports are crowdsourced. One report per person per incident — use your private edit link to
         update your situation instead of submitting again.
