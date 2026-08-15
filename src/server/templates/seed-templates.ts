@@ -140,4 +140,20 @@ export const cellularOutageTemplate: SeedTemplate = {
   },
 };
 
-export const seedTemplates = [stormDamageTemplate, cellularOutageTemplate];
+export const searchAreaTemplate: SeedTemplate = {
+  key: 'search-area',
+  title: 'Search Area',
+  description: 'Record an area that was searched and what was observed.',
+  schema: {
+    version: 1,
+    fields: [
+      { key: 'search_status', type: 'single_select', label: 'Search status', required: true, order: 1, choices: [choice('planned', 'Planned'), choice('in_progress', 'In progress'), choice('completed', 'Completed'), choice('needs_follow_up', 'Needs follow-up')] },
+      { key: 'searched_at', type: 'datetime', label: 'Date and time searched', required: true, order: 2 },
+      { key: 'search_team', type: 'short_text', label: 'Search team or identifier (optional)', required: false, order: 3 },
+      { key: 'observations', type: 'long_text', label: 'Observations and notes', required: false, order: 4, constraints: { maxLength: 3000 } },
+      { key: 'photo', type: 'photo', label: 'Optional photo', required: false, order: 5 },
+    ],
+  },
+};
+
+export const seedTemplates = [stormDamageTemplate, cellularOutageTemplate, searchAreaTemplate];
