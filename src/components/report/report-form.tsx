@@ -4,6 +4,8 @@ import type { FieldView, PickerPoint } from '@/shared/types';
 import { LocationPicker } from './location-picker';
 import { FieldInput, collectAnswers } from './field-input';
 import { TurnstileWidget } from './turnstile-widget';
+import { ReportGeometryPicker } from './report-geometry-picker';
+import type { ReportGeometryMode, ReportGeometry } from '@/server/schema/report-geometry';
 
 export interface EditInitialData {
   answers: Record<string, unknown>;
@@ -23,6 +25,7 @@ export function ReportForm({
   reportId,
   editToken,
   initial,
+  geometryMode = 'point',
 }: {
   reference: string;
   fields: FieldView[];
@@ -33,6 +36,7 @@ export function ReportForm({
   reportId?: string;
   editToken?: string;
   initial?: EditInitialData;
+  geometryMode?: ReportGeometryMode;
 }) {
   const [point, setPoint] = useState<PickerPoint | null>(
     initial
@@ -54,13 +58,14 @@ export function ReportForm({
   const [shareMessage, setShareMessage] = useState('');
   const [step, setStep] = useState(0);
   const [uploadingPhoto, setUploadingPhoto] = useState<string | null>(null);
+  const [geometry, setGeometry] = useState<ReportGeometry | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
   const needsExactConfirmation =
     mode === 'edit' && initial?.privacy === 'approximate' && privacy === 'exact';
 
   async function handleSubmit(form: FormData) {
-    if (!point || submitting) return;
+    if ((geometryMode === 'point' && !point) || (geometryMode !== 'point' && !geometry) || submitting) return;
     setSubmitting(true);
     setError('');
     try {
@@ -95,11 +100,12 @@ export function ReportForm({
         answers[key] = photo;
       }
       const body = {
-        latitude: point.latitude,
-        longitude: point.longitude,
+        latitude: point?.latitude ?? center[1],
+        longitude: point?.longitude ?? center[0],
+        ...(geometry ? { geometry } : {}),
         privacy,
         answers,
-        placeLabel: point.placeLabel,
+        placeLabel: point?.placeLabel,
         ...(mode === 'create' ? { turnstileToken: turnstileToken ?? undefined } : {}),
         ...(needsExactConfirmation ? { confirmExact: true } : {}),
       };
@@ -224,13 +230,13 @@ export function ReportForm({
       </ol>
 
       {step === 0 && <>
-        <LocationPicker
+        {geometryMode === 'point' ? <LocationPicker
           center={center}
           reportingArea={reportingArea}
           value={point}
           onChange={setPoint}
-        />
-        <p className="hint">Select an area, then use the map pin to adjust the location.</p>
+        /> : <ReportGeometryPicker center={center} value={geometry} onChange={setGeometry} />}
+        {geometryMode === 'point' && <p className="hint">Select an area, then use the map pin to adjust the location.</p>}
       </>}
 
       {step === 1 && <fieldset className="field">
@@ -289,7 +295,7 @@ export function ReportForm({
       <div className="report-step-actions">
         {step > 0 && <button type="button" className="button button-secondary" onClick={() => setStep((value) => value - 1)}>Back</button>}
         {step < 3 ? (
-          <button type="button" className="button" disabled={step === 0 && !point || (step === 1 && needsExactConfirmation && !confirmExact)} onClick={() => {
+          <button type="button" className="button" disabled={(step === 0 && (geometryMode === 'point' ? !point : !geometry)) || (step === 1 && needsExactConfirmation && !confirmExact)} onClick={() => {
             if (step === 2) {
               const invalid = formRef.current?.querySelector<HTMLElement>(':invalid');
               if (invalid) { invalid.focus(); return; }
@@ -297,7 +303,7 @@ export function ReportForm({
             setStep((value) => value + 1);
           }}>Continue</button>
         ) : (
-          <button className="button" disabled={!point || submitting || uploadingPhoto !== null}>{submitting ? 'Saving…' : mode === 'create' ? 'Submit report' : 'Update report'}</button>
+          <button className="button" disabled={(geometryMode === 'point' ? !point : !geometry) || submitting || uploadingPhoto !== null}>{submitting ? 'Saving…' : mode === 'create' ? 'Submit report' : 'Update report'}</button>
         )}
       </div>
       <p className="hint">

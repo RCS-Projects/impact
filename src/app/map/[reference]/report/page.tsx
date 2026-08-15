@@ -46,6 +46,7 @@ export default async function ReportPage({ params }: PageProps) {
               reportingArea={incident.reportingArea}
               turnstileSiteKey={env.TURNSTILE_SITE_KEY || null}
               mode="create"
+              geometryMode={incident.reportGeometryMode}
             />
           </div>
         </>

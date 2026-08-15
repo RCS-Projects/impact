@@ -1,0 +1,14 @@
+'use client';
+import { useEffect, useRef, useState } from 'react';
+import maplibregl from 'maplibre-gl';
+import 'maplibre-gl/dist/maplibre-gl.css';
+import type { ReportGeometry } from '@/server/schema/report-geometry';
+
+export function ReportGeometryPicker({ center, value, onChange }: { center: [number, number]; value: ReportGeometry | null; onChange: (value: ReportGeometry | null) => void }) {
+  const container = useRef<HTMLDivElement>(null); const mapRef = useRef<maplibregl.Map>();
+  const [points, setPoints] = useState<[number, number][]>(value?.type === 'Polygon' ? (value.coordinates[0]!.slice(0, -1) as [number, number][]) : []); const pointsRef = useRef(points); pointsRef.current = points;
+  useEffect(() => { if (!container.current || mapRef.current) return; const map = new maplibregl.Map({ container: container.current, style: process.env.NEXT_PUBLIC_MAP_STYLE_URL ?? 'https://tiles.openfreemap.org/styles/liberty', center, zoom: 11 }); map.addControl(new maplibregl.NavigationControl(), 'top-right'); map.on('load', () => { map.addSource('drawn-area', { type: 'geojson', data: { type: 'Feature', geometry: { type: 'Polygon', coordinates: [[]] }, properties: {} } }); map.addLayer({ id: 'drawn-area-fill', type: 'fill', source: 'drawn-area', paint: { 'fill-color': '#f5a524', 'fill-opacity': .2 } }); map.addLayer({ id: 'drawn-area-line', type: 'line', source: 'drawn-area', paint: { 'line-color': '#f5a524', 'line-width': 3 } }); }); map.on('click', (event) => setPoints((current) => [...current, [event.lngLat.lng, event.lngLat.lat]])); mapRef.current = map; return () => { map.remove(); mapRef.current = undefined; }; }, [center]);
+  useEffect(() => { const source = mapRef.current?.getSource('drawn-area') as maplibregl.GeoJSONSource | undefined; if (source) source.setData({ type: 'Feature', geometry: { type: 'Polygon', coordinates: points.length >= 3 ? [[...points, points[0]!]] : [points] }, properties: {} }); }, [points]);
+  function finish() { if (points.length >= 3) onChange({ type: 'Polygon', coordinates: [[...points, points[0]!] ] }); }
+  return <div className="geometry-picker"><p className="hint">Tap the map to add boundary points. Your submitted search area is public.</p><div ref={container} className="picker-map" aria-label="Draw a public search area on the map" role="img" /><div className="buttons"><button type="button" className="button button-secondary button-sm" disabled={!points.length} onClick={() => setPoints((current) => current.slice(0, -1))}>Undo last point</button><button type="button" className="button button-secondary button-sm" disabled={!points.length} onClick={() => { setPoints([]); onChange(null); }}>Clear</button><button type="button" className="button button-sm" disabled={points.length < 3} onClick={finish}>Finish area ({points.length} points)</button></div></div>;
+}
