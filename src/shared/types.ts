@@ -36,6 +36,8 @@ export interface PublicReport {
   radius: number | null;
   status: ReportStatus;
   createdAt: string;
+  geometryType?: 'ST_Point' | 'ST_Polygon' | 'Point' | 'Polygon';
+  geometry?: { type: 'Point' | 'Polygon'; coordinates: unknown };
 }
 
 export interface GeocodeResult {

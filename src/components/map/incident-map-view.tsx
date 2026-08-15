@@ -144,6 +144,18 @@ export function IncidentMapView(props: IncidentMapViewProps) {
         type: 'geojson',
         data: { type: 'FeatureCollection', features: [] },
       });
+      map.addSource('report-polygons', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+      });
+      map.addLayer({
+        id: 'report-polygon-fill', type: 'fill', source: 'report-polygons',
+        paint: { 'fill-color': ['get', 'color'], 'fill-opacity': 0.2 },
+      });
+      map.addLayer({
+        id: 'report-polygon-line', type: 'line', source: 'report-polygons',
+        paint: { 'line-color': ['get', 'color'], 'line-width': 3 },
+      });
       map.addLayer({
         id: 'privacy-fill',
         type: 'fill',
@@ -226,6 +238,11 @@ export function IncidentMapView(props: IncidentMapViewProps) {
       });
       map.on('click', 'report-points', (event) => {
         const feature = map.queryRenderedFeatures(event.point, { layers: ['report-points'] })[0];
+        const id = feature?.properties?.id as string | undefined;
+        if (id) setSelectedId(id);
+      });
+      map.on('click', 'report-polygon-fill', (event) => {
+        const feature = map.queryRenderedFeatures(event.point, { layers: ['report-polygon-fill'] })[0];
         const id = feature?.properties?.id as string | undefined;
         if (id) setSelectedId(id);
       });
@@ -313,13 +330,20 @@ export function IncidentMapView(props: IncidentMapViewProps) {
     if (!map || !mapReady) return;
     const pointSource = map.getSource('reports') as maplibregl.GeoJSONSource | undefined;
     const circleSource = map.getSource('privacy-circles') as maplibregl.GeoJSONSource | undefined;
-    if (!pointSource || !circleSource) return;
+    const polygonSource = map.getSource('report-polygons') as maplibregl.GeoJSONSource | undefined;
+    if (!pointSource || !circleSource || !polygonSource) return;
     pointSource.setData({
       type: 'FeatureCollection',
-      features: reports.map((report) => ({
+      features: reports.filter((report) => !report.geometry || report.geometry.type === 'Point').map((report) => ({
         type: 'Feature',
         properties: { id: report.id, color: colorFor(report) },
         geometry: { type: 'Point', coordinates: [report.longitude, report.latitude] },
+      })),
+    });
+    polygonSource.setData({
+      type: 'FeatureCollection',
+      features: reports.filter((report) => report.geometry?.type === 'Polygon').map((report) => ({
+        type: 'Feature', properties: { id: report.id, color: colorFor(report) }, geometry: report.geometry as GeoJSON.Polygon,
       })),
     });
     circleSource.setData({

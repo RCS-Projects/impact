@@ -106,7 +106,10 @@ export async function createReport(
   const resolvedPhotos = await resolvePhotoAnswers(db, schema, answers, input.uploadClaimToken ?? null);
 
   const privateWkt = pointWkt(input.longitude, input.latitude);
-  if (!(await incidentsRepo.geofenceAllows(db, incident.id, privateWkt)))
+  if (geometry.type === 'Polygon') {
+    if (!(await incidentsRepo.geofenceAllowsGeometry(db, incident.id, JSON.stringify(geometry))))
+      throw AppError.unprocessable('That area is invalid or outside this incident’s reporting area.');
+  } else if (!(await incidentsRepo.geofenceAllows(db, incident.id, privateWkt)))
     throw AppError.unprocessable(OUTSIDE_AREA_MESSAGE);
 
   const browserToken = input.browserTokenCookie ?? newOpaqueToken();

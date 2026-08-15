@@ -230,6 +230,16 @@ export function geofenceAllows(db: postgres.Sql, incidentId: string, pointWkt: s
   `.then((rows) => Boolean(rows[0]?.allowed));
 }
 
+export function geofenceAllowsGeometry(db: postgres.Sql, incidentId: string, geometryGeoJson: string) {
+  return db<{ allowed: boolean }[]>`
+    SELECT reporting_area IS NULL OR (
+      ST_IsValid(ST_SetSRID(ST_GeomFromGeoJSON(${geometryGeoJson}), 4326))
+      AND ST_Covers(reporting_area::geometry, ST_SetSRID(ST_GeomFromGeoJSON(${geometryGeoJson}), 4326))
+    ) AS allowed
+    FROM incidents WHERE id = ${incidentId}
+  `.then((rows) => Boolean(rows[0]?.allowed));
+}
+
 export function reportCount(db: postgres.Sql, incidentId: string) {
   return db<{ count: number }[]>`
     SELECT count(*)::int AS count FROM reports WHERE incident_id = ${incidentId}
