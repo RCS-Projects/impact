@@ -192,7 +192,6 @@ describe.runIf(available)('PostGIS integration', () => {
       longitude: INSIDE.longitude,
       privacy: 'approximate',
       answers,
-      placeLabel: 'Test Village',
       browserTokenCookie: null,
       ip: '203.0.113.10',
     });

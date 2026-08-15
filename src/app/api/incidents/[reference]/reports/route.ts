@@ -12,8 +12,7 @@ const submitInput = z.object({
   latitude: z.number().min(41).max(84),
   longitude: z.number().min(-142).max(-52),
   privacy: z.enum(['exact', 'approximate']),
-  answers: z.unknown(),
-  placeLabel: z.string().max(120).optional(),
+  answers: z.record(z.unknown()),
   turnstileToken: z.string().max(4096).optional(),
   geometry: reportGeometrySchema.optional(),
 });
@@ -28,7 +27,6 @@ export const POST = handleApi(
       longitude: data.longitude,
       privacy: data.privacy,
       answers: data.answers,
-      placeLabel: data.placeLabel,
       turnstileToken: data.turnstileToken,
       browserTokenCookie: (await cookies()).get('impact_browser_token')?.value ?? null,
       uploadClaimToken: (await cookies()).get('impact_upload_claim')?.value ?? null,

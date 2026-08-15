@@ -26,6 +26,8 @@ pipeline, SSE implementation, public map/report flows, and administrator flows.
   paths; client MIME types and filenames are not trusted.
 - Public report updates ignore client-supplied place labels and derive locality
   server-side. Full geocode cache entries now expire after five minutes.
+- Public report submission schemas no longer accept a client-controlled place
+  label; the server derives it from the submitted location.
 - Unified cleanup removes expired reports, old rate-limit/geocode rows, orphaned
   upload rows, and orphaned files.
 - Added a persistent Docker upload volume alongside the PostgreSQL volume.

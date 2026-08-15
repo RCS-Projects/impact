@@ -81,7 +81,6 @@ export interface CreateReportInput {
   longitude: number;
   privacy: 'exact' | 'approximate';
   answers: unknown;
-  placeLabel?: string;
   turnstileToken?: string;
   browserTokenCookie: string | null;
   uploadClaimToken?: string | null;
@@ -267,7 +266,6 @@ export interface UpdateReportInput {
   latitude: number;
   longitude: number;
   confirmExact?: boolean;
-  placeLabel?: string;
   uploadClaimToken?: string | null;
   geometry?: unknown;
 }
