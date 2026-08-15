@@ -38,6 +38,7 @@ export function PolygonEditor({
           const next = [...coordsRef.current];
           next[i] = [ll.lng, ll.lat];
           setCoords(next);
+          onChange(next.length >= 3 ? next : null);
         });
         markersRef.current.push(marker);
       });
@@ -101,6 +102,7 @@ export function PolygonEditor({
       const c: Coords = [e.lngLat.lng, e.lngLat.lat];
       const next = [...coordsRef.current, c];
       setCoords(next);
+      onChange(next.length >= 3 ? next : null);
       updateSource(map, next);
     });
 
@@ -140,6 +142,20 @@ export function PolygonEditor({
         >
           {drawing ? 'Drawing...' : 'Draw on map'}
         </button>
+        {drawing && coords.length > 0 && (
+          <button type="button" className="button button-secondary button-sm" onClick={() => {
+            const next = coords.slice(0, -1);
+            setCoords(next);
+            onChange(next.length >= 3 ? next : null);
+          }}>
+            Undo last point
+          </button>
+        )}
+        {drawing && (
+          <button type="button" className="button button-sm" disabled={coords.length < 3} onClick={() => setDrawing(false)}>
+            Finish area
+          </button>
+        )}
         {coords.length > 0 && (
           <button type="button" className="button button-secondary button-sm" onClick={clear}>
             Clear
