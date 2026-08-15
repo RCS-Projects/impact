@@ -84,11 +84,15 @@ export function ModerationApp() {
   }, []);
 
   async function act(reportId: string, action: string) {
-    if ((action === 'reject' || action === 'remove') && !window.confirm(`${action === 'remove' ? 'Remove' : 'Reject'} this report? This is a destructive moderation action.`)) return;
+    let actionNote = note;
+    if (action === 'reject' || action === 'remove') {
+      if (!window.confirm(`${action === 'remove' ? 'Remove' : 'Reject'} this report? This is a destructive moderation action.`)) return;
+      if (!actionNote) actionNote = window.prompt('Add a moderation note (recommended):', '') ?? '';
+    }
     const response = await fetch(`/api/admin/reports/${reportId}/status`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-csrf-token': getCsrfToken() },
-      body: JSON.stringify({ action, note: note || undefined }),
+      body: JSON.stringify({ action, note: actionNote || undefined }),
     });
     if (!response.ok) {
       const data = (await response.json().catch(() => ({}))) as { error?: string };
@@ -101,11 +105,15 @@ export function ModerationApp() {
 
   async function batchAct(action: string) {
     if (selected.size === 0) return;
-    if ((action === 'reject' || action === 'remove') && !window.confirm(`${action === 'remove' ? 'Remove' : 'Reject'} ${selected.size} selected reports?`)) return;
+    let actionNote = note;
+    if (action === 'reject' || action === 'remove') {
+      if (!window.confirm(`${action === 'remove' ? 'Remove' : 'Reject'} ${selected.size} selected reports?`)) return;
+      if (!actionNote) actionNote = window.prompt('Add a moderation note (recommended):', '') ?? '';
+    }
     const response = await fetch('/api/admin/reports/batch-status', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-csrf-token': getCsrfToken() },
-      body: JSON.stringify({ reportIds: [...selected], action, note: note || undefined }),
+      body: JSON.stringify({ reportIds: [...selected], action, note: actionNote || undefined }),
     });
     if (!response.ok) {
       const data = (await response.json().catch(() => ({}))) as { error?: string };
