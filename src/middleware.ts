@@ -19,7 +19,6 @@ export function middleware(_request: NextRequest) {
     "default-src 'self'",
     `script-src 'self' 'nonce-${nonce}' https://challenges.cloudflare.com`,
     `style-src 'self' 'nonce-${nonce}'`,
-    "style-src-attr 'unsafe-inline'",
     "img-src 'self' data: blob: https://openfreemap.org https://*.openfreemap.org",
     "connect-src 'self' https://openfreemap.org https://*.openfreemap.org https://challenges.cloudflare.com",
     "worker-src 'self' blob:",

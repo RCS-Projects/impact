@@ -163,7 +163,7 @@ export function AdminApp({
       <main className="shell">
         <p className="eyebrow">Administration</p>
         <h1 className="page-title">Sign in</h1>
-        <form action={login} className="form-block" style={{ maxWidth: 420 }}>
+        <form action={login} className="form-block u-form-narrow">
           <label className="field">
             Login
             <input name="login" autoComplete="username" required />
@@ -354,7 +354,7 @@ export function AdminApp({
               }}
               rows={4}
               placeholder='{"type":"Polygon","coordinates":[[...]]}'
-              style={{ marginTop: '0.3rem' }}
+              className="u-mt-sm"
             />
             {reportingAreaError && (
               <p className="notice notice-error" role="alert">
@@ -404,7 +404,7 @@ export function AdminApp({
                       )}
                     </td>
                     <td>
-                      <div className="buttons" style={{ marginTop: 0 }}>
+                      <div className="buttons u-mt-0">
                         <a
                           className="button button-secondary button-sm"
                           href={`/admin/incidents/${incident.id}`}

@@ -86,17 +86,17 @@ export function UserManagement() {
 
   return (
     <main className="shell">
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-        <div style={{ flex: 1 }}>
+      <div className="u-flex-wrap-gap">
+        <div className="u-flex-1">
           <p className="eyebrow">
-            <a href="/admin" style={{ color: 'inherit' }}>
+            <a href="/admin" className="u-inherit">
               Admin
             </a>{' '}
             / Users
           </p>
           <h1 className="page-title">User management</h1>
         </div>
-        <div className="buttons" style={{ marginTop: 0 }}>
+        <div className="buttons u-mt-0">
           <button
             type="button"
             className="button button-sm"
@@ -112,7 +112,7 @@ export function UserManagement() {
       {showCreate && (
         <section className="card">
           <h2>Create user</h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          <div className="u-stack-sm">
             <div className="grid-3">
               <label className="field">
                 Email
@@ -144,12 +144,7 @@ export function UserManagement() {
                 </select>
               </label>
             </div>
-            <button
-              type="button"
-              className="button"
-              style={{ alignSelf: 'flex-start' }}
-              onClick={() => void createUser()}
-            >
+            <button type="button" className="button u-self-start" onClick={() => void createUser()}>
               Create user
             </button>
           </div>
@@ -178,28 +173,27 @@ export function UserManagement() {
                       {user.role}
                     </span>
                   </td>
-                  <td className="hint" style={{ fontSize: '0.82rem' }}>
+                  <td className="hint u-hint-sm">
                     {new Date(user.createdAt).toLocaleDateString()}
                   </td>
-                  <td className="hint" style={{ fontSize: '0.82rem' }}>
+                  <td className="hint u-hint-sm">
                     {user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleDateString() : 'never'}
                   </td>
                   <td>
-                    <div className="buttons" style={{ marginTop: 0 }}>
+                    <div className="buttons u-mt-0">
                       <select
                         value={user.role}
                         onChange={(e) =>
                           void changeRole(user.id, e.target.value as 'admin' | 'moderator')
                         }
-                        style={{ fontSize: '0.82rem', padding: '0.2rem 0.4rem' }}
+                        className="u-select-compact"
                       >
                         <option value="moderator">Moderator</option>
                         <option value="admin">Admin</option>
                       </select>
                       <button
                         type="button"
-                        className="button button-secondary button-sm"
-                        style={{ color: '#e5534b' }}
+                        className="button button-secondary button-sm u-muted-error"
                         onClick={() => void deleteUser(user.id, user.email)}
                       >
                         Remove

@@ -177,8 +177,8 @@ export function ModerationApp() {
       </div>
 
       <div className="card">
-        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-          <label className="field" style={{ minWidth: 220 }}>
+        <div className="u-filter-row">
+          <label className="field u-min220">
             Incident
             <select
               value={incidentId}
@@ -195,7 +195,7 @@ export function ModerationApp() {
               ))}
             </select>
           </label>
-          <label className="field" style={{ minWidth: 200 }}>
+          <label className="field u-min200">
             Status
             <select
               value={status}
@@ -213,7 +213,7 @@ export function ModerationApp() {
               <option value="removed">Removed</option>
             </select>
           </label>
-          <label className="field" style={{ minWidth: 160 }}>
+          <label className="field u-min160">
             Privacy
             <select
               value={privacy}
@@ -227,7 +227,7 @@ export function ModerationApp() {
               <option value="exact">Exact</option>
             </select>
           </label>
-          <label className="field" style={{ minWidth: 180 }}>
+          <label className="field u-min180">
             Suspicious reason
             <select
               value={suspiciousReason}
@@ -258,7 +258,7 @@ export function ModerationApp() {
               Has photo
             </label>
           </label>
-          <label className="field" style={{ flex: 1, minWidth: 200 }}>
+          <label className="field u-flex-grow-min200">
             Note (optional)
             <input
               value={note}
@@ -271,10 +271,7 @@ export function ModerationApp() {
       </div>
 
       {selected.size > 0 && (
-        <div
-          className="card"
-          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}
-        >
+        <div className="card u-wrap-center">
           <span className="hint">{selected.size} selected</span>
           {ACTIONS.map((action) => (
             <button
@@ -295,7 +292,7 @@ export function ModerationApp() {
         <table className="data">
           <thead>
             <tr>
-              <th style={{ width: 40 }}>
+              <th className="u-w40">
                 <input
                   type="checkbox"
                   checked={selected.size === reports.length && reports.length > 0}
@@ -338,13 +335,13 @@ export function ModerationApp() {
                     <span className="hint">none</span>
                   ) : (
                     report.suspiciousReasons.map((reason) => (
-                      <span key={reason} className="chip chip-flagged" style={{ margin: 2 }}>
+                      <span key={reason} className="chip chip-flagged u-m2">
                         {REASON_LABELS[reason] ?? reason}
                       </span>
                     ))
                   )}
                 </td>
-                <td style={{ maxWidth: 280 }}>
+                <td className="u-max280">
                   {Object.entries(report.answers).map(([key, value]) => (
                     <div key={key}>
                       <span className="hint">{key.replaceAll('_', ' ')}:</span>{' '}
@@ -354,12 +351,7 @@ export function ModerationApp() {
                           alt="Uploaded report photo"
                           width={(value as { width?: number }).width}
                           height={(value as { height?: number }).height}
-                          style={{
-                            maxWidth: 180,
-                            maxHeight: 120,
-                            objectFit: 'contain',
-                            verticalAlign: 'middle',
-                          }}
+                          className="u-photo-thumb"
                         />
                       ) : Array.isArray(value) ? (
                         value.join(', ')
@@ -405,14 +397,7 @@ export function ModerationApp() {
 
       {selectedReport && (
         <aside className="moderation-detail" aria-label="Selected report details">
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              gap: '.75rem',
-              alignItems: 'center',
-            }}
-          >
+          <div className="u-detail-header">
             <h2>Report details</h2>
             <button
               type="button"
@@ -500,7 +485,7 @@ export function ModerationApp() {
       )}
 
       {totalPages > 1 && (
-        <div className="buttons" style={{ marginTop: '0.6rem', justifyContent: 'center' }}>
+        <div className="buttons u-centered-buttons">
           <button
             type="button"
             className="button button-secondary button-sm"
@@ -509,7 +494,7 @@ export function ModerationApp() {
           >
             Previous
           </button>
-          <span className="hint" style={{ fontSize: '0.82rem' }}>
+          <span className="hint u-hint-sm">
             Page {page + 1} of {totalPages} ({total} total)
           </span>
           <button

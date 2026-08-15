@@ -528,24 +528,18 @@ export function IncidentMapView(props: IncidentMapViewProps) {
               {colorField
                 ? colorField.choices.map((choice, index) => (
                     <span className="legend-item" key={choice.value}>
-                      <span
-                        className="legend-dot"
-                        style={{ background: PALETTE[index % PALETTE.length] }}
-                      />
+                      <span className={`legend-dot legend-color-${index % PALETTE.length}`} />
                       {choice.label}
                     </span>
                   ))
-                : Object.entries(STATUS_COLORS).map(([status, color]) => (
+                : Object.entries(STATUS_COLORS).map(([status]) => (
                     <span className="legend-item" key={status}>
-                      <span className="legend-dot" style={{ background: color }} />
+                      <span className={`legend-dot legend-status-${status}`} />
                       {STATUS_LABELS[status as ReportStatus]}
                     </span>
                   ))}
               <span className="legend-item">
-                <span
-                  className="legend-dot"
-                  style={{ background: 'transparent', border: '1px solid #4da3ff' }}
-                />
+                <span className="legend-dot u-privacy-ring" />
                 500-foot privacy circle (approximate reports)
               </span>
             </div>
@@ -556,8 +550,7 @@ export function IncidentMapView(props: IncidentMapViewProps) {
                   <li key={report.id}>
                     <button
                       type="button"
-                      className="button button-secondary button-sm"
-                      style={{ margin: '0.2rem 0' }}
+                      className="button button-secondary button-sm u-map-label"
                       onClick={() => {
                         setSelectedId(report.id);
                         mapRef.current?.easeTo({
@@ -613,7 +606,7 @@ export function IncidentMapView(props: IncidentMapViewProps) {
                             loading="lazy"
                             width={(value as { width?: number }).width}
                             height={(value as { height?: number }).height}
-                            style={{ maxWidth: '100%', maxHeight: 200, borderRadius: 4 }}
+                            className="u-photo-preview"
                           />
                         ) : (
                           choiceLabel(props.fields, field.key, value)

@@ -90,25 +90,16 @@ export function ReportEditPage({ reportId, token }: { reportId: string; token: s
               geometryMode={payload.incident.reportGeometryMode}
             />
           )}
-          <div
-            style={{
-              marginTop: '1.5rem',
-              paddingTop: '1rem',
-              borderTop: '1px solid var(--border)',
-            }}
-          >
+          <div className="u-delete-panel">
             <button
               type="button"
-              className="button button-sm"
-              style={{ color: '#e5534b' }}
+              className="button button-sm u-muted-error"
               disabled={deleting}
               onClick={() => void deleteReport()}
             >
               {deleting ? 'Deleting...' : 'Delete this report'}
             </button>
-            <span className="hint" style={{ marginLeft: '0.5rem', fontSize: '0.82rem' }}>
-              This cannot be undone.
-            </span>
+            <span className="hint u-delete-note">This cannot be undone.</span>
           </div>
         </>
       )}

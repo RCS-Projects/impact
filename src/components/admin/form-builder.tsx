@@ -75,34 +75,24 @@ export function FormBuilder({
     t === 'single_select' || t === 'multi_select' || t === 'radio' || t === 'checkbox';
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+    <div className="u-stack-sm">
       {value.map((field, idx) => (
         <div
           key={field.key}
-          className="card"
-          style={{ padding: '0.6rem', margin: 0, cursor: 'pointer' }}
+          className="card u-form-card"
           onClick={() => setExpanded(expanded === field.key ? null : field.key)}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <span className="hint" style={{ minWidth: '1.5rem', textAlign: 'right' }}>
-              {idx + 1}.
-            </span>
-            <span style={{ flex: 1, fontWeight: 500 }}>
+          <div className="u-row-gap-sm">
+            <span className="hint u-index-label">{idx + 1}.</span>
+            <span className="u-flex-weight">
               {field.label || <span className="hint">Untitled field</span>}
             </span>
-            <span className="chip" style={{ fontSize: '0.72rem' }}>
-              {TYPE_LABELS[field.type]}
-            </span>
-            {field.required && (
-              <span className="chip chip-flagged" style={{ fontSize: '0.72rem' }}>
-                required
-              </span>
-            )}
-            <div className="buttons" style={{ marginTop: 0, gap: '0.2rem' }}>
+            <span className="chip u-chip-tiny">{TYPE_LABELS[field.type]}</span>
+            {field.required && <span className="chip chip-flagged u-chip-tiny">required</span>}
+            <div className="buttons u-buttons-compact">
               <button
                 type="button"
-                className="button button-secondary button-sm"
-                style={{ padding: '0.2rem 0.4rem', minHeight: 0, fontSize: '0.75rem' }}
+                className="button button-secondary button-sm u-button-compact"
                 onClick={(e) => {
                   e.stopPropagation();
                   moveUp(field.key);
@@ -113,8 +103,7 @@ export function FormBuilder({
               </button>
               <button
                 type="button"
-                className="button button-secondary button-sm"
-                style={{ padding: '0.2rem 0.4rem', minHeight: 0, fontSize: '0.75rem' }}
+                className="button button-secondary button-sm u-button-compact"
                 onClick={(e) => {
                   e.stopPropagation();
                   moveDown(field.key);
@@ -125,13 +114,7 @@ export function FormBuilder({
               </button>
               <button
                 type="button"
-                className="button button-secondary button-sm"
-                style={{
-                  padding: '0.2rem 0.4rem',
-                  minHeight: 0,
-                  fontSize: '0.75rem',
-                  color: '#e5534b',
-                }}
+                className="button button-secondary button-sm u-danger-compact"
                 onClick={(e) => {
                   e.stopPropagation();
                   remove(field.key);
@@ -143,15 +126,7 @@ export function FormBuilder({
           </div>
 
           {expanded === field.key && (
-            <div
-              style={{
-                marginTop: '0.6rem',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.4rem',
-              }}
-              onClick={(e) => e.stopPropagation()}
-            >
+            <div className="u-field-stack" onClick={(e) => e.stopPropagation()}>
               <div className="grid-3">
                 <label className="field">
                   Key
@@ -208,14 +183,7 @@ export function FormBuilder({
               </label>
 
               {field.type !== 'info' && (
-                <label
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.4rem',
-                    fontSize: '0.85rem',
-                  }}
-                >
+                <label className="u-checkbox-label">
                   <input
                     type="checkbox"
                     checked={field.required}
@@ -227,17 +195,9 @@ export function FormBuilder({
 
               {needsChoices(field.type) && (
                 <div>
-                  <span
-                    className="hint"
-                    style={{ fontSize: '0.8rem', marginBottom: '0.2rem', display: 'block' }}
-                  >
-                    Choices
-                  </span>
+                  <span className="hint u-label-small">Choices</span>
                   {(field.choices ?? []).map((choice, ci) => (
-                    <div
-                      key={ci}
-                      style={{ display: 'flex', gap: '0.3rem', marginBottom: '0.3rem' }}
-                    >
+                    <div key={ci} className="u-inline-gap-sm">
                       <input
                         value={choice.value}
                         onChange={(e) => {
@@ -246,7 +206,7 @@ export function FormBuilder({
                           update(field.key, { choices });
                         }}
                         placeholder="value"
-                        style={{ flex: 1 }}
+                        className="u-flex-1"
                       />
                       <input
                         value={choice.label}
@@ -256,12 +216,11 @@ export function FormBuilder({
                           update(field.key, { choices });
                         }}
                         placeholder="Label"
-                        style={{ flex: 2 }}
+                        className="u-flex-two"
                       />
                       <button
                         type="button"
-                        className="button button-secondary button-sm"
-                        style={{ padding: '0.2rem 0.5rem', minHeight: 0 }}
+                        className="button button-secondary button-sm u-pad-compact"
                         onClick={() => {
                           const choices = (field.choices ?? []).filter((_, i) => i !== ci);
                           update(field.key, { choices });
@@ -295,10 +254,7 @@ export function FormBuilder({
                       );
                       if (dupes.length === 0) return null;
                       return (
-                        <p
-                          className="notice notice-warn"
-                          style={{ marginTop: '0.3rem', fontSize: '0.8rem' }}
-                        >
+                        <p className="notice notice-warn u-mt-tiny">
                           Duplicate values: {dupes.map((d) => d.value).join(', ')}
                         </p>
                       );
@@ -353,9 +309,8 @@ export function FormBuilder({
 
       <button
         type="button"
-        className="button button-secondary button-sm"
+        className="button button-secondary button-sm u-self-start"
         onClick={add}
-        style={{ alignSelf: 'flex-start' }}
       >
         + Add field
       </button>

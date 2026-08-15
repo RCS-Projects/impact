@@ -5,7 +5,7 @@ Date: 2026-08-15
 ## Scope and repository state
 
 The completion pass started at `e003c58b208b098544a825116791ea865ce397d1` and
-currently ends at `0ed55a4` (`Add deployment smoke validation`). The
+currently ends at the current working commit after CSP/style hardening. The
 working tree is clean; changes are committed locally and have not been pushed.
 
 I inspected the application routes, services, repositories, schemas, migrations,
@@ -65,6 +65,9 @@ pipeline, SSE implementation, public map/report flows, and administrator flows.
 - `E2E_BASE_URL=http://192.168.120.7:3000 npm run smoke` passed health,
   readiness, landing page, admin page, security headers, and unknown-incident
   SSE checks.
+- Migrated the remaining React style attributes to named CSS classes. The
+  production CSP no longer contains `style-src-attr 'unsafe-inline'`; a rebuilt
+  Docker image was smoke-tested and served the strict policy.
 - Backup/restore drill completed against a disposable database: restored
   `5 incidents | 4 reports | 4 private locations | 0 uploads | 7 audit events`
   and PostGIS was available. PostgreSQL dump and upload-volume archive were
@@ -118,9 +121,6 @@ therefore not claimed as locally passed.
 - Physical iOS/Android device checks cannot be completed in this container.
 - Full Chromium/Firefox/WebKit Playwright and accessibility matrix requires
   browser binaries/CI setup.
-- The CSP still retains `style-src-attr 'unsafe-inline'` while the remaining
-  legacy React inline-style inventory is migrated; this is a documented
-  hardening follow-up, not a claimed completion.
 
 ## Production deployment checklist
 

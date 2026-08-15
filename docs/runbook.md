@@ -133,10 +133,9 @@ secure channel.
 
 ## Content security policy
 
-Middleware issues a per-request nonce for framework inline scripts and styles. The
-remaining `style-src-attr` exception exists only for legacy React style attributes;
-new UI must use named CSS classes, and the exception can be removed once the inline
-style inventory is fully migrated.
+Middleware issues a per-request nonce for framework inline scripts and styles.
+Application components use maintained CSS classes; no React style attributes are
+permitted under the production CSP.
 
 ## Deployment smoke test
 

@@ -180,17 +180,17 @@ export function IncidentEditor({ incidentId }: { incidentId: string }) {
 
   return (
     <main className="shell">
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-        <div style={{ flex: 1 }}>
+      <div className="u-flex-wrap-gap">
+        <div className="u-flex-1">
           <p className="eyebrow">
-            <a href="/admin" style={{ color: 'inherit' }}>
+            <a href="/admin" className="u-inherit">
               Incidents
             </a>{' '}
             / Edit
           </p>
           <h1 className="page-title">{incident.title}</h1>
         </div>
-        <div className="buttons" style={{ marginTop: 0 }}>
+        <div className="buttons u-mt-0">
           <span className={`chip chip-${incident.status}`}>{incident.status}</span>
           {incident.status !== 'draft' && (
             <a
@@ -277,7 +277,7 @@ export function IncidentEditor({ incidentId }: { incidentId: string }) {
 
       <section className="card">
         <h2>Details</h2>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+        <div className="u-stack-md">
           <label className="field">
             Title
             <input
@@ -381,7 +381,7 @@ export function IncidentEditor({ incidentId }: { incidentId: string }) {
               }}
               rows={4}
               placeholder='{"type":"Polygon","coordinates":[[...]]}'
-              style={{ marginTop: '0.3rem' }}
+              className="u-mt-sm"
             />
             {areaJsonError && <p className="notice notice-error">{areaJsonError}</p>}
           </label>
@@ -390,7 +390,7 @@ export function IncidentEditor({ incidentId }: { incidentId: string }) {
 
       <section className="card">
         <h2>Report form</h2>
-        <p className="hint" style={{ marginBottom: '0.6rem' }}>
+        <p className="hint u-mb-md">
           Define what information reporters submit. At least one field is required.
         </p>
         <FormBuilder
@@ -402,10 +402,8 @@ export function IncidentEditor({ incidentId }: { incidentId: string }) {
 
       <section className="card">
         <h2>Display settings</h2>
-        <p className="hint" style={{ marginBottom: '0.6rem' }}>
-          Configure how the map looks for this incident.
-        </p>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem' }}>
+        <p className="hint u-mb-md">Configure how the map looks for this incident.</p>
+        <div className="u-grid-two">
           <label className="field">
             Marker radius (px)
             <input
@@ -471,9 +469,7 @@ export function IncidentEditor({ incidentId }: { incidentId: string }) {
           </label>
           <label className="field">
             <span>&nbsp;</span>
-            <label
-              style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.4rem' }}
-            >
+            <label className="u-flex-gap-margin">
               <input
                 type="checkbox"
                 checked={
@@ -495,16 +491,9 @@ export function IncidentEditor({ incidentId }: { incidentId: string }) {
 
       <section className="card">
         <h2>Meta</h2>
-        <dl
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'auto 1fr',
-            gap: '0.3rem 1rem',
-            fontSize: '0.85rem',
-          }}
-        >
+        <dl className="u-meta-grid">
           <dt className="hint">ID</dt>
-          <dd style={{ fontFamily: 'monospace' }}>{incident.id}</dd>
+          <dd className="u-mono">{incident.id}</dd>
           <dt className="hint">Created</dt>
           <dd>{new Date(incident.createdAt).toLocaleString()}</dd>
           {incident.publishedAt && (
@@ -523,7 +512,7 @@ export function IncidentEditor({ incidentId }: { incidentId: string }) {
           <dd>{new Date(incident.updatedAt).toLocaleString()}</dd>
           <dt className="hint">Export</dt>
           <dd>
-            <div className="buttons" style={{ marginTop: 0 }}>
+            <div className="buttons u-mt-0">
               <a
                 className="button button-secondary button-sm"
                 href={`/api/admin/incidents/${incidentId}/export?format=csv`}
@@ -545,7 +534,7 @@ export function IncidentEditor({ incidentId }: { incidentId: string }) {
           <dt className="hint">Sensitive export</dt>
           <dd>
             <p className="hint">Includes exact submitted locations. Every download is audited.</p>
-            <div className="buttons" style={{ marginTop: 0 }}>
+            <div className="buttons u-mt-0">
               <button
                 type="button"
                 className="button button-danger button-sm"

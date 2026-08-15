@@ -51,18 +51,18 @@ export function AuditViewer() {
 
   return (
     <main className="shell">
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-        <div style={{ flex: 1 }}>
+      <div className="u-flex-wrap-gap">
+        <div className="u-flex-1">
           <p className="eyebrow">
-            <a href="/admin" style={{ color: 'inherit' }}>
+            <a href="/admin" className="u-inherit">
               Admin
             </a>{' '}
             / Audit log
           </p>
           <h1 className="page-title">Audit log</h1>
         </div>
-        <div className="buttons" style={{ marginTop: 0 }}>
-          <label className="field" style={{ margin: 0 }}>
+        <div className="buttons u-mt-0">
+          <label className="field u-no-margin">
             Filter by incident ID
             <input
               value={filter}
@@ -71,7 +71,7 @@ export function AuditViewer() {
                 setPage(0);
               }}
               placeholder="UUID (optional)"
-              style={{ maxWidth: 280 }}
+              className="u-max280"
             />
           </label>
         </div>
@@ -92,28 +92,26 @@ export function AuditViewer() {
             <tbody>
               {events.map((event) => (
                 <tr key={event.id}>
-                  <td className="hint" style={{ whiteSpace: 'nowrap', fontSize: '0.8rem' }}>
+                  <td className="hint u-nowrap-small">
                     {new Date(event.createdAt).toLocaleString()}
                   </td>
                   <td>
-                    <span className="chip" style={{ fontSize: '0.78rem' }}>
+                    <span className="chip u-chip-small">
                       {EVENT_LABELS[event.eventType] ?? event.eventType}
                     </span>
                   </td>
-                  <td style={{ fontSize: '0.82rem' }}>
+                  <td className="u-hint-sm">
                     {event.actorType}
                     {event.actorId ? (
                       <span className="hint"> ({event.actorId.slice(0, 8)}...)</span>
                     ) : null}
                   </td>
-                  <td style={{ fontSize: '0.82rem' }}>
+                  <td className="u-hint-sm">
                     {event.incidentTitle ?? <span className="hint">-</span>}
                   </td>
-                  <td style={{ fontSize: '0.82rem' }}>
+                  <td className="u-hint-sm">
                     {Object.keys(event.metadata).length > 0 ? (
-                      <span style={{ fontFamily: 'monospace', fontSize: '0.78rem' }}>
-                        {JSON.stringify(event.metadata)}
-                      </span>
+                      <span className="u-mono-small">{JSON.stringify(event.metadata)}</span>
                     ) : (
                       <span className="hint">-</span>
                     )}
@@ -130,7 +128,7 @@ export function AuditViewer() {
             </tbody>
           </table>
         </div>
-        <div className="buttons" style={{ marginTop: '0.6rem' }}>
+        <div className="buttons u-report-filter-bar">
           <button
             type="button"
             className="button button-secondary button-sm"
@@ -139,9 +137,7 @@ export function AuditViewer() {
           >
             Previous
           </button>
-          <span className="hint" style={{ fontSize: '0.82rem' }}>
-            Page {page + 1}
-          </span>
+          <span className="hint u-hint-sm">Page {page + 1}</span>
           <button
             type="button"
             className="button button-secondary button-sm"

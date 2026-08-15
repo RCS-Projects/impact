@@ -68,17 +68,17 @@ export function TemplateList() {
 
   return (
     <main className="shell">
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-        <div style={{ flex: 1 }}>
+      <div className="u-flex-wrap-gap">
+        <div className="u-flex-1">
           <p className="eyebrow">
-            <a href="/admin" style={{ color: 'inherit' }}>
+            <a href="/admin" className="u-inherit">
               Admin
             </a>{' '}
             / Templates
           </p>
           <h1 className="page-title">Schema templates</h1>
         </div>
-        <div className="buttons" style={{ marginTop: 0 }}>
+        <div className="buttons u-mt-0">
           <button
             type="button"
             className="button button-sm"
@@ -94,7 +94,7 @@ export function TemplateList() {
       {showCreate && (
         <section className="card">
           <h2>Create template</h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          <div className="u-stack-sm">
             <div className="grid-3">
               <label className="field">
                 Key
@@ -118,8 +118,7 @@ export function TemplateList() {
             </div>
             <button
               type="button"
-              className="button"
-              style={{ alignSelf: 'flex-start' }}
+              className="button u-self-start"
               onClick={() => void createTemplate()}
             >
               Create template
@@ -147,13 +146,13 @@ export function TemplateList() {
                   : 0;
                 return (
                   <tr key={t.key}>
-                    <td style={{ fontFamily: 'monospace' }}>{t.key}</td>
+                    <td className="u-mono">{t.key}</td>
                     <td>{t.title}</td>
                     <td>
                       {fieldCount} field{fieldCount !== 1 ? 's' : ''}
                     </td>
                     <td>
-                      <div style={{ display: 'flex', gap: '0.4rem' }}>
+                      <div className="u-inline-gap">
                         <a
                           className="button button-secondary button-sm"
                           href={`/admin/templates/${t.key}`}

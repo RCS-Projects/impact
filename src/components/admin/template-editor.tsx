@@ -69,17 +69,17 @@ export function TemplateEditor({ templateKey }: { templateKey: string }) {
 
   return (
     <main className="shell">
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-        <div style={{ flex: 1 }}>
+      <div className="u-flex-wrap-gap">
+        <div className="u-flex-1">
           <p className="eyebrow">
-            <Link href="/admin/templates" style={{ color: 'inherit' }}>
+            <Link href="/admin/templates" className="u-inherit">
               Templates
             </Link>{' '}
             / {template.key}
           </p>
           <h1 className="page-title">{template.title}</h1>
         </div>
-        <div className="buttons" style={{ marginTop: 0 }}>
+        <div className="buttons u-mt-0">
           <button
             type="button"
             className="button button-secondary button-sm"
@@ -94,10 +94,10 @@ export function TemplateEditor({ templateKey }: { templateKey: string }) {
 
       <section className="card">
         <h2>Details</h2>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        <div className="u-stack-sm">
           <label className="field">
             Key
-            <input value={template.key} disabled style={{ opacity: 0.6 }} />
+            <input value={template.key} disabled className="u-muted-input" />
           </label>
           <label className="field">
             Title
@@ -136,7 +136,7 @@ export function TemplateEditor({ templateKey }: { templateKey: string }) {
         />
       </section>
 
-      <div style={{ position: 'sticky', bottom: 0, padding: '0.6rem 0', background: 'var(--bg)' }}>
+      <div className="u-sticky-save">
         <button
           type="button"
           className="button"

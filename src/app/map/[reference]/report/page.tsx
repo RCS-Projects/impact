@@ -40,7 +40,7 @@ export default async function ReportPage({ params }: PageProps) {
             Reports are crowdsourced and may not be independently verified. One report per person,
             please — you will get a private link to update it as things change.
           </p>
-          <div className="forms-grid" style={{ marginTop: '1.25rem' }}>
+          <div className="forms-grid u-mt-lg">
             <ReportForm
               reference={reference}
               fields={schema.fields as FieldView[]}

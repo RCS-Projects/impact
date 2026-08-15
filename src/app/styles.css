@@ -65,6 +65,298 @@ a {
   }
 }
 
+/* Shared layout utilities used by administrative and reporting views. Keeping
+   these in CSS avoids React style attributes and keeps CSP strict. */
+.u-flex-wrap-gap {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.u-flex-1 {
+  flex: 1;
+}
+.u-inherit {
+  color: inherit;
+}
+.u-mt-0 {
+  margin-top: 0;
+}
+.u-stack-sm {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.u-stack-md {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.u-hint-sm {
+  font-size: 0.82rem;
+}
+.u-mb-sm {
+  margin-bottom: 0.4rem;
+}
+.u-mb-md {
+  margin-bottom: 0.6rem;
+}
+.u-mt-sm {
+  margin-top: 0.3rem;
+}
+.u-mono {
+  font-family: monospace;
+}
+.u-muted-error {
+  color: #e5534b;
+}
+.u-sticky-save {
+  position: sticky;
+  bottom: 0;
+  padding: 0.6rem 0;
+  background: var(--bg);
+}
+.u-form-narrow {
+  max-width: 420px;
+}
+.u-filter-row {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+.u-wrap-center {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.u-grid-two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+}
+.u-inline-gap {
+  display: flex;
+  gap: 0.4rem;
+}
+.u-inline-gap-sm {
+  display: flex;
+  gap: 0.3rem;
+}
+.u-max280 {
+  max-width: 280px;
+}
+.u-max280 {
+  max-width: 280px;
+}
+.u-min220 {
+  min-width: 220px;
+}
+.u-min200 {
+  min-width: 200px;
+}
+.u-min180 {
+  min-width: 180px;
+}
+.u-min160 {
+  min-width: 160px;
+}
+.u-flex-grow-min200 {
+  flex: 1;
+  min-width: 200px;
+}
+.u-w40 {
+  width: 40px;
+}
+.u-m2 {
+  margin: 2px;
+}
+.u-center-actions {
+  margin-top: 0.6rem;
+  justify-content: center;
+}
+.u-self-start {
+  align-self: flex-start;
+}
+.u-no-margin {
+  margin: 0;
+}
+.u-mono-small {
+  font-family: monospace;
+  font-size: 0.78rem;
+}
+.u-nowrap-small {
+  white-space: nowrap;
+  font-size: 0.8rem;
+}
+.u-chip-small {
+  font-size: 0.78rem;
+}
+.u-chip-tiny {
+  font-size: 0.72rem;
+}
+.u-muted-input {
+  opacity: 0.6;
+}
+.u-button-compact {
+  padding: 0.2rem 0.4rem;
+  min-height: 0;
+  font-size: 0.75rem;
+}
+.u-label-small {
+  font-size: 0.8rem;
+  margin-bottom: 0.2rem;
+  display: block;
+}
+.u-pad-compact {
+  padding: 0.2rem 0.5rem;
+  min-height: 0;
+}
+.u-form-card {
+  padding: 0.6rem;
+  margin: 0;
+  cursor: pointer;
+}
+.u-row-gap-sm {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.u-index-label {
+  min-width: 1.5rem;
+  text-align: right;
+}
+.u-flex-weight {
+  flex: 1;
+  font-weight: 500;
+}
+.u-buttons-compact {
+  margin-top: 0;
+  gap: 0.2rem;
+}
+.u-flex-two {
+  flex: 2;
+}
+.u-mt-tiny {
+  margin-top: 0.3rem;
+  font-size: 0.8rem;
+}
+.u-centered-buttons {
+  margin-top: 0.6rem;
+  justify-content: center;
+}
+.u-flex-gap-margin {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.4rem;
+}
+.u-report-filter-bar {
+  margin-top: 0.6rem;
+}
+.u-map-label {
+  margin: 0.2rem 0;
+}
+.u-photo-preview {
+  max-width: 100%;
+  max-height: 200px;
+  border-radius: 4px;
+}
+.u-danger-compact {
+  padding: 0.2rem 0.4rem;
+  min-height: 0;
+  font-size: 0.75rem;
+  color: #e5534b;
+}
+.u-field-stack {
+  margin-top: 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.u-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+}
+.u-meta-grid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.3rem 1rem;
+  font-size: 0.85rem;
+}
+.u-delete-panel {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+.u-delete-note {
+  margin-left: 0.5rem;
+  font-size: 0.82rem;
+}
+.u-photo-thumb {
+  max-width: 180px;
+  max-height: 120px;
+  object-fit: contain;
+  vertical-align: middle;
+}
+.u-detail-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: center;
+}
+.u-buttons-polygon {
+  margin-top: 0;
+  margin-bottom: 0.4rem;
+}
+.u-select-compact {
+  font-size: 0.82rem;
+  padding: 0.2rem 0.4rem;
+}
+.u-privacy-ring {
+  background: transparent;
+  border: 1px solid #4da3ff;
+}
+.picker-map.is-drawing {
+  cursor: crosshair;
+}
+.legend-color-0 {
+  background: #f5a524;
+}
+.legend-color-1 {
+  background: #4da3ff;
+}
+.legend-color-2 {
+  background: #3fb96f;
+}
+.legend-color-3 {
+  background: #e5534b;
+}
+.legend-color-4 {
+  background: #c678dd;
+}
+.legend-color-5 {
+  background: #56b6c2;
+}
+.legend-color-6 {
+  background: #d19a66;
+}
+.legend-color-7 {
+  background: #e06c9f;
+}
+.legend-status-unverified {
+  background: #f5a524;
+}
+.legend-status-verified {
+  background: #3fb96f;
+}
+.legend-status-resolved {
+  background: #4da3ff;
+}
+
 .shell {
   max-width: 860px;
   margin: 0 auto;

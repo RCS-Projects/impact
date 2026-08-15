@@ -135,7 +135,7 @@ export function PolygonEditor({
 
   return (
     <div>
-      <div className="buttons" style={{ marginTop: 0, marginBottom: '0.4rem' }}>
+      <div className="buttons u-buttons-polygon">
         <button
           type="button"
           className={`button button-sm ${drawing ? '' : 'button-secondary'}`}
@@ -173,16 +173,15 @@ export function PolygonEditor({
         )}
       </div>
       {drawing && (
-        <p className="hint" style={{ marginBottom: '0.4rem' }}>
+        <p className="hint u-mb-sm">
           Click to place vertices. The shape auto-closes at 3+ points. Click Done when finished.
         </p>
       )}
       <div
         ref={container}
-        className="picker-map"
+        className={`picker-map${drawing ? ' is-drawing' : ''}`}
         role="img"
         aria-label="Draw the reporting area polygon on the map"
-        style={{ cursor: drawing ? 'crosshair' : undefined }}
       />
       {coords.length > 0 && (
         <p className="hint">
