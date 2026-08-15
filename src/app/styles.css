@@ -136,6 +136,7 @@ a {
 .button-sm {
   padding: 0.35rem 0.7rem;
   font-size: 0.85rem;
+  min-height: 44px;
 }
 
 .chip {
@@ -159,7 +160,7 @@ a {
   color: var(--text-dim);
 }
 .chip-archived {
-  color: var(--text-muted);
+  color: var(--text-faint);
   border-color: rgba(140, 140, 140, 0.4);
 }
 .chip-draft {

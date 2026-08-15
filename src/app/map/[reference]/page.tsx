@@ -4,6 +4,8 @@ import type { FieldView } from '@/shared/types';
 import { IncidentMapView } from '@/components/map/incident-map-view';
 import { deriveFilters, incidentFormSchema, primaryColorField } from '@/server/schema/form-schema';
 import { getPublicIncident } from '@/server/services/incidents.service';
+import { parseDisplaySettings } from '@/server/schema/incident-schema';
+import { getEnv } from '@/server/env';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,7 +15,23 @@ interface PageProps {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const incident = await getPublicIncident(params.reference);
-  return { title: incident?.title ?? 'Incident map' };
+  const url = `${getEnv().APP_URL}/map/${params.reference}`;
+  const title = incident?.title ?? 'Incident map';
+  const description = incident?.description ?? 'Crowdsourced community incident map.';
+  return {
+    title,
+    description,
+    metadataBase: new URL(getEnv().APP_URL),
+    alternates: { canonical: url },
+    openGraph: {
+      title,
+      description,
+      url,
+      siteName: 'Impact Maps',
+      type: 'website',
+    },
+    twitter: { card: 'summary', title, description },
+  };
 }
 
 export default async function IncidentMapPage({ params }: PageProps) {
@@ -35,7 +53,7 @@ export default async function IncidentMapPage({ params }: PageProps) {
       fields={schema.fields as FieldView[]}
       filters={filters}
       colorFieldKey={colorField?.key ?? null}
-      displaySettings={(incident.displaySettings as Record<string, unknown>) ?? {}}
+      displaySettings={parseDisplaySettings(incident.displaySettings)}
     />
   );
 }

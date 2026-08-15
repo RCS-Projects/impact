@@ -59,6 +59,8 @@ export function IncidentMapView(props: IncidentMapViewProps) {
   const [fieldFilters, setFieldFilters] = useState<Record<string, Set<string>>>({});
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [loadError, setLoadError] = useState('');
+  const fallbackPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const colorField = useMemo(
     () => props.filters.find((filter) => filter.key === props.colorFieldKey) ?? null,
@@ -253,23 +255,56 @@ export function IncidentMapView(props: IncidentMapViewProps) {
   }, []);
 
   useEffect(() => {
-    if (!mapReady) void loadReports();
+    if (mapReady) void loadReports();
   }, [mapReady, activeStatuses, fieldFilters, loadReports]);
 
   useEffect(() => {
     const es = new EventSource(`/api/incidents/${props.reference}/events`);
+    let activeSource = es;
+    let stopped = false;
+    let reconnectDelay = 1_000;
+    const clearFallback = () => {
+      if (fallbackPollRef.current) clearInterval(fallbackPollRef.current);
+      fallbackPollRef.current = null;
+    };
+    const scheduleReconnect = () => {
+      if (stopped || reconnectTimerRef.current) return;
+      if (!fallbackPollRef.current) fallbackPollRef.current = setInterval(() => void loadReports(), 30_000);
+      reconnectTimerRef.current = setTimeout(() => {
+        reconnectTimerRef.current = null;
+        activeSource.close();
+        const replacement = new EventSource(`/api/incidents/${props.reference}/events`);
+        activeSource = replacement;
+        replacement.addEventListener('report_created', () => void loadReports());
+        replacement.addEventListener('report_updated', () => void loadReports());
+        replacement.onopen = () => {
+          reconnectDelay = 1_000;
+          clearFallback();
+        };
+        replacement.onerror = () => {
+          replacement.close();
+          reconnectDelay = Math.min(reconnectDelay * 2, 30_000);
+          scheduleReconnect();
+        };
+      }, reconnectDelay);
+      reconnectDelay = Math.min(reconnectDelay * 2, 30_000);
+    };
     es.addEventListener('report_created', () => {
       void loadReports();
     });
     es.addEventListener('report_updated', () => {
       void loadReports();
     });
-    es.onerror = () => {
+    es.onopen = () => { reconnectDelay = 1_000; clearFallback(); };
+    es.onerror = () => { es.close(); scheduleReconnect(); };
+    return () => {
+      stopped = true;
       es.close();
-      const fallback = setInterval(() => void loadReports(), 30_000);
-      return () => clearInterval(fallback);
+      clearFallback();
+      if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
+      reconnectTimerRef.current = null;
+      activeSource.close();
     };
-    return () => es.close();
   }, [props.reference, loadReports]);
 
   useEffect(() => {
@@ -322,6 +357,9 @@ export function IncidentMapView(props: IncidentMapViewProps) {
   }
 
   const selected = selectedId ? (reports.find((report) => report.id === selectedId) ?? null) : null;
+  const activeFilterCount =
+    (PUBLIC_VISIBLE_STATUSES.length - activeStatuses.size) +
+    Object.values(fieldFilters).reduce((count, values) => count + values.size, 0);
 
   return (
     <div className="stage">
@@ -347,6 +385,7 @@ export function IncidentMapView(props: IncidentMapViewProps) {
           aria-expanded={filtersOpen}
         >
           Filters
+          {activeFilterCount > 0 && <span className="chip" aria-label={`${activeFilterCount} active filters`}>{activeFilterCount}</span>}
         </button>
         {props.incidentStatus === 'live' && (
           <a className="button button-sm topbar-cta" href={`/map/${props.reference}/report`}>
@@ -361,6 +400,16 @@ export function IncidentMapView(props: IncidentMapViewProps) {
         {filtersOpen && (
           <aside className="panel filter-panel" aria-label="Map filters">
             <h2>Filters</h2>
+            <button
+              type="button"
+              className="button button-secondary button-sm"
+              onClick={() => {
+                setActiveStatuses(new Set(PUBLIC_VISIBLE_STATUSES));
+                setFieldFilters({});
+              }}
+            >
+              Clear filters
+            </button>
             <div className="filter-group">
               <div className="filter-group-label">Report status</div>
               <div className="chip-row">

@@ -1,4 +1,3 @@
-import { z } from 'zod';
 import { AppError } from '../errors';
 import { getSql } from '../db/client';
 import * as auditRepo from '../repos/audit.repo';
@@ -6,6 +5,7 @@ import * as incidentsRepo from '../repos/incidents.repo';
 import type { IncidentPublicRow } from '../repos/incidents.repo';
 import * as templatesRepo from '../repos/templates.repo';
 import { incidentFormSchema } from '../schema/form-schema';
+import { parseDisplaySettings, parseReportingArea } from '../schema/incident-schema';
 import { newPublicId } from '../security/tokens';
 import type { AdminSession } from './auth.service';
 
@@ -38,11 +38,6 @@ export function slugify(value: string): string {
   );
 }
 
-const geoJsonAreaSchema = z.union([
-  z.object({ type: z.literal('Polygon'), coordinates: z.array(z.unknown()) }),
-  z.object({ type: z.literal('MultiPolygon'), coordinates: z.array(z.unknown()) }),
-]);
-
 export interface CreateIncidentInput {
   title: string;
   description?: string;
@@ -58,13 +53,7 @@ export async function createDraft(input: CreateIncidentInput, admin: AdminSessio
   if (!template) throw AppError.notFound('Template not found');
   const formSchema = incidentFormSchema.parse(template.schema);
 
-  let areaGeoJson: string | null = null;
-  if (input.reportingArea !== undefined && input.reportingArea !== null) {
-    const parsedArea = geoJsonAreaSchema.safeParse(input.reportingArea);
-    if (!parsedArea.success)
-      throw AppError.badRequest('Reporting area must be a GeoJSON Polygon or MultiPolygon');
-    areaGeoJson = JSON.stringify(parsedArea.data);
-  }
+  const areaGeoJson = parseReportingArea(input.reportingArea);
 
   const row = await incidentsRepo.create(db, {
     publicId: newPublicId(),
@@ -143,11 +132,6 @@ export interface UpdateIncidentInput {
   formSchema?: { version: 1; fields: unknown[] };
 }
 
-const updateGeoJsonAreaSchema = z.union([
-  z.object({ type: z.literal('Polygon'), coordinates: z.array(z.unknown()) }),
-  z.object({ type: z.literal('MultiPolygon'), coordinates: z.array(z.unknown()) }),
-]);
-
 export async function update(incidentId: string, input: UpdateIncidentInput, admin: AdminSession) {
   const db = getSql();
   const existing = await incidentsRepo.findByIdForAdmin(db, incidentId);
@@ -177,15 +161,12 @@ export async function update(incidentId: string, input: UpdateIncidentInput, adm
     if (input.reportingArea === null) {
       sets.reportingAreaGeoJson = null;
     } else {
-      const parsedArea = updateGeoJsonAreaSchema.safeParse(input.reportingArea);
-      if (!parsedArea.success)
-        throw AppError.badRequest('Reporting area must be a GeoJSON Polygon or MultiPolygon');
-      sets.reportingAreaGeoJson = JSON.stringify(parsedArea.data);
+      sets.reportingAreaGeoJson = parseReportingArea(input.reportingArea);
     }
   }
 
   if (input.displaySettings !== undefined) {
-    sets.displaySettings = input.displaySettings;
+    sets.displaySettings = parseDisplaySettings(input.displaySettings);
   }
 
   if (input.reportExpiryDays !== undefined) {
@@ -193,7 +174,31 @@ export async function update(incidentId: string, input: UpdateIncidentInput, adm
   }
 
   if (input.formSchema !== undefined) {
-    sets.formSchema = input.formSchema;
+    const nextSchema = incidentFormSchema.parse(input.formSchema);
+    const oldSchema = incidentFormSchema.parse(existing.formSchema);
+    const oldByKey = new Map(oldSchema.fields.map((field) => [field.key, field]));
+    const nextByKey = new Map(nextSchema.fields.map((field) => [field.key, field]));
+    if (existing.status !== 'draft') {
+      for (const oldField of oldSchema.fields) {
+        const nextField = nextByKey.get(oldField.key);
+        if (!nextField || nextField.type !== oldField.type) {
+          throw AppError.conflict(`Published form field "${oldField.label}" cannot be removed or change type`);
+        }
+      }
+      if ((await incidentsRepo.reportCount(db, incidentId)) > 0) {
+        for (const oldField of oldSchema.fields) {
+          const nextField = nextByKey.get(oldField.key)!;
+          const oldChoices = new Set((oldField.choices ?? []).map((choice) => choice.value));
+          const nextChoices = new Set((nextField.choices ?? []).map((choice) => choice.value));
+          for (const choice of oldChoices) {
+            if (!nextChoices.has(choice)) {
+              throw AppError.conflict(`Choice "${choice}" cannot be removed while reports use this form`);
+            }
+          }
+        }
+      }
+    }
+    sets.formSchema = nextSchema;
   }
 
   const changed = await incidentsRepo.update(db, incidentId, sets);

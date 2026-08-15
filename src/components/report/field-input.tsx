@@ -174,7 +174,11 @@ export function FieldInput({ field, defaultValue }: { field: FieldView; defaultV
             name={field.key}
             type="datetime-local"
             required={field.required}
-            defaultValue={typeof defaultValue === 'string' ? toLocalInputValue(defaultValue) : ''}
+            defaultValue={
+              typeof defaultValue === 'string'
+                ? toLocalInputValue(defaultValue)
+                : toLocalInputValue(new Date().toISOString())
+            }
           />
         </label>
       );

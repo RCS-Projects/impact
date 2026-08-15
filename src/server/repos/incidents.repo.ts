@@ -241,3 +241,9 @@ export function geofenceAllows(db: postgres.Sql, incidentId: string, pointWkt: s
     FROM incidents WHERE id = ${incidentId}
   `.then((rows) => Boolean(rows[0]?.allowed));
 }
+
+export function reportCount(db: postgres.Sql, incidentId: string) {
+  return db<{ count: number }[]>`
+    SELECT count(*)::int AS count FROM reports WHERE incident_id = ${incidentId}
+  `.then((rows) => rows[0]?.count ?? 0);
+}

@@ -1,72 +1,32 @@
-import Link from 'next/link';
-import { listPublicAll } from '@/server/services/incidents.service';
 
-export const dynamic = 'force-dynamic';
+export const dynamic = 'force-static';
 
-export default async function LandingPage() {
-  const incidents = await listPublicAll();
-  const liveIncidents = incidents.filter((i) => i.status === 'live');
-  const closedIncidents = incidents.filter((i) => i.status === 'closed');
-
+export default function LandingPage() {
   return (
     <main className="shell">
       <p className="eyebrow">Community incident maps</p>
       <h1 className="page-title">See what&apos;s happening. Share what you know.</h1>
       <p>
-        Impact Maps are crowdsourced community maps for storms, outages, road conditions, and other
-        local incidents. No account needed — open a map, drop a pin, and tell us what you are
-        experiencing. Your location can stay private.
+        Impact Maps are focused, crowdsourced maps for storms, outages, road conditions, and other
+        local incidents. Open a map from its direct link, drop a pin, and share what you are
+        experiencing.
       </p>
       <p className="disclaimer">
-        Reports are crowdsourced and may not be independently verified. This is not an official
-        emergency alerting system.
+        Reports are crowdsourced and may not be independently verified. Impact Maps are not an
+        official emergency alerting system. For emergencies, call 911.
       </p>
-
-      <h2 style={{ marginTop: '2rem', marginBottom: '0.75rem' }}>Live maps</h2>
-      {liveIncidents.length === 0 && <p className="hint">No live incident maps right now.</p>}
-      {liveIncidents.map((incident) => (
-        <Link
-          key={incident.reference}
-          className="incident-card"
-          href={`/map/${incident.reference}`}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-            <h2 style={{ margin: 0 }}>{incident.title}</h2>
-            <span className="chip chip-live">live</span>
-            <span className="hint" style={{ fontSize: '0.82rem' }}>
-              {incident.reportCount} report{incident.reportCount !== 1 ? 's' : ''}
-            </span>
-          </div>
-          {incident.description && <p>{incident.description}</p>}
-        </Link>
-      ))}
-
-      {closedIncidents.length > 0 && (
-        <>
-          <h2 style={{ marginTop: '2rem', marginBottom: '0.75rem' }}>Past incidents</h2>
-          {closedIncidents.map((incident) => (
-            <Link
-              key={incident.reference}
-              className="incident-card"
-              href={`/map/${incident.reference}`}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                <h2 style={{ margin: 0 }}>{incident.title}</h2>
-                <span className="chip chip-closed">closed</span>
-                <span className="hint" style={{ fontSize: '0.82rem' }}>
-                  {incident.reportCount} report{incident.reportCount !== 1 ? 's' : ''}
-                </span>
-              </div>
-              {incident.description && <p>{incident.description}</p>}
-            </Link>
-          ))}
-        </>
-      )}
-
+      <section className="card" style={{ marginTop: '1.5rem' }}>
+        <h2>Privacy first</h2>
+        <p>
+          You can publish an exact location or use an approximate pin. Approximate reports hide the
+          submitted location inside a randomized 500-foot circle, while the exact location stays
+          private to the report owner and authorized administrators.
+        </p>
+      </section>
       <div className="buttons">
-        <Link className="button button-secondary" href="/admin">
-          Administration
-        </Link>
+        <a className="button" href="https://renfrewcountyscanner.com" target="_blank" rel="noreferrer">
+          Renfrew County Scanner
+        </a>
       </div>
     </main>
   );

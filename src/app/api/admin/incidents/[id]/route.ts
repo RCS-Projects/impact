@@ -5,6 +5,7 @@ import { noStore } from '@/server/http';
 import { requireAdmin, requireAdminRole } from '@/server/services/auth.service';
 import { getById, update } from '@/server/services/incidents.service';
 import { incidentFormSchema } from '@/server/schema/form-schema';
+import { displaySettingsInputSchema } from '@/server/schema/incident-schema';
 
 export const dynamic = 'force-dynamic';
 
@@ -43,7 +44,7 @@ const updateInput = z.object({
     .optional(),
   zoom: z.number().min(3).max(18).optional(),
   reportingArea: z.unknown().optional(),
-  displaySettings: z.unknown().optional(),
+  displaySettings: displaySettingsInputSchema.optional(),
   reportExpiryDays: z.number().int().min(1).max(365).nullish(),
   formSchema: z
     .object({
