@@ -10,6 +10,30 @@ export type BoundaryGeometry =
   | { type: 'Polygon'; coordinates: Coords[][] }
   | { type: 'MultiPolygon'; coordinates: Coords[][][] };
 
+const MAX_RING_COORDINATES = 5_000;
+
+function limitRing(ring: Coords[]): Coords[] {
+  if (ring.length < 3) return ring;
+  const last = ring[ring.length - 1]!;
+  const closed = ring.length > 1 && ring[0]![0] === last[0] && ring[0]![1] === last[1];
+  const points = closed ? ring.slice(0, -1) : ring;
+  if (points.length + 1 <= MAX_RING_COORDINATES) return [...points, points[0]!];
+  const stride = Math.ceil(points.length / (MAX_RING_COORDINATES - 1));
+  const sampled = points
+    .filter((_, index) => index % stride === 0)
+    .slice(0, MAX_RING_COORDINATES - 1);
+  return sampled.length >= 3 ? [...sampled, sampled[0]!] : ring;
+}
+
+export function normalizeBoundary(value: BoundaryGeometry): BoundaryGeometry {
+  if (value.type === 'Polygon')
+    return { type: 'Polygon', coordinates: value.coordinates.map(limitRing) };
+  return {
+    type: 'MultiPolygon',
+    coordinates: value.coordinates.map((polygon) => polygon.map(limitRing)),
+  };
+}
+
 function closeRing(points: Coords[]) {
   return points.length >= 3 ? [...points, points[0]!] : points;
 }
@@ -118,7 +142,7 @@ export function PolygonEditor({
           setPoints((current) => {
             const next = [...current];
             next[index] = [location.lng, location.lat];
-            onChange({ type: 'Polygon', coordinates: [closeRing(next)] });
+            onChange(normalizeBoundary({ type: 'Polygon', coordinates: [closeRing(next)] }));
             return next;
           });
         });
@@ -147,7 +171,11 @@ export function PolygonEditor({
       setImportedBoundary(null);
       setPoints((current) => {
         const next: Coords[] = [...current, [event.lngLat.lng, event.lngLat.lat]];
-        onChange(next.length >= 3 ? { type: 'Polygon', coordinates: [closeRing(next)] } : null);
+        onChange(
+          next.length >= 3
+            ? normalizeBoundary({ type: 'Polygon', coordinates: [closeRing(next)] })
+            : null,
+        );
         return next;
       });
     });
@@ -236,7 +264,7 @@ export function PolygonEditor({
       setPoints([]);
       setImportedBoundary(boundary);
     }
-    onChange(boundary);
+    onChange(normalizeBoundary(boundary));
     setDrawing(false);
     setEditing(false);
     setSearchResults([]);

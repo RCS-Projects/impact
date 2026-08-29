@@ -3,7 +3,11 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getCsrfToken } from '@/lib/csrf';
-import { PolygonEditor, type BoundaryGeometry } from '@/components/admin/polygon-editor';
+import {
+  normalizeBoundary,
+  PolygonEditor,
+  type BoundaryGeometry,
+} from '@/components/admin/polygon-editor';
 
 interface AdminIncident {
   id: string;
@@ -377,7 +381,8 @@ export function AdminApp({
                 }
                 try {
                   setReportingAreaError('');
-                  setReportingArea(JSON.parse(raw) as BoundaryGeometry);
+                  const parsed = JSON.parse(raw) as BoundaryGeometry;
+                  setReportingArea(normalizeBoundary(parsed));
                 } catch {
                   setReportingAreaError('Enter valid GeoJSON before creating the incident.');
                 }
