@@ -25,13 +25,24 @@ async function csrfHeader(page: any) {
 }
 
 async function signIn(page: any) {
-  const response = await page.request.post('/api/admin/login', {
-    data: { login: ADMIN_LOGIN, password: ADMIN_PASSWORD },
-  });
-  if (!response.ok()) {
-    throw new Error(`Admin login failed: ${response.status()} ${await response.text()}`);
-  }
   await page.goto('/admin');
+  const result = await page.evaluate(
+    async ({ login, password }: { login: string; password: string }) => {
+      const response = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ login, password }),
+      });
+      return { status: response.status, body: await response.text() };
+    },
+    { login: ADMIN_LOGIN, password: ADMIN_PASSWORD },
+  );
+  if (result.status < 200 || result.status >= 300) {
+    throw new Error(`Admin login failed: ${result.status} ${result.body}`);
+  }
+  // Login is performed by the browser page so Firefox receives the Set-Cookie
+  // headers in the same context used by the authenticated navigation.
+  await page.reload({ waitUntil: 'domcontentloaded' });
   await page.waitForSelector('text=Incident maps');
 }
 
