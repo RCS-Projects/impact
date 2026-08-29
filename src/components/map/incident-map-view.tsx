@@ -10,7 +10,7 @@ import {
   type PublicReport,
   type ReportStatus,
 } from '@/shared/types';
-import { circlePolygon } from '@/lib/geo';
+import { circlePolygon, geoJsonAreaCenter } from '@/lib/geo';
 import { formatRelativeTime } from '@/lib/format';
 import { choiceLabel } from '@/components/report/field-input';
 
@@ -130,7 +130,7 @@ export function IncidentMapView(props: IncidentMapViewProps) {
       container: container.current,
       style:
         process.env.NEXT_PUBLIC_MAP_STYLE_URL ?? 'https://tiles.openfreemap.org/styles/liberty',
-      center: props.center,
+      center: geoJsonAreaCenter(props.reportingArea, props.center),
       zoom: props.zoom,
     });
     map.addControl(new maplibregl.NavigationControl(), 'top-right');
