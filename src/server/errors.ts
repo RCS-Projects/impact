@@ -14,7 +14,11 @@ export function errorResponse(error: unknown): NextResponse {
   }
   if (error instanceof ZodError) {
     return NextResponse.json(
-      { error: 'Invalid input', code: 'bad_request' },
+      {
+        error: 'Invalid input',
+        code: 'bad_request',
+        details: error.issues.map((issue) => ({ path: issue.path, message: issue.message })),
+      },
       { status: 400, headers: { 'Cache-Control': 'no-store' } },
     );
   }

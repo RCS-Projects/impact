@@ -102,16 +102,28 @@ export function AdminApp({
     setMessage('');
     const form = event.currentTarget;
     const formData = new FormData(form);
+    const title = String(formData.get('title') ?? '').trim();
+    const latitude = Number(formData.get('latitude'));
+    const longitude = Number(formData.get('longitude'));
+    const zoom = Number(formData.get('zoom'));
+    if (title.length < 3) {
+      setMessage('Title must be at least 3 characters.');
+      return;
+    }
+    if (![latitude, longitude, zoom].every(Number.isFinite)) {
+      setMessage('Latitude, longitude, and zoom must be valid numbers.');
+      return;
+    }
     const response = await adminApi('/api/admin/incidents', {
-      title: formData.get('title'),
+      title,
       description: String(formData.get('description') ?? '') || undefined,
       templateKey,
       center: {
-        latitude: Number(formData.get('latitude') ?? defaultCenter.latitude),
-        longitude: Number(formData.get('longitude') ?? defaultCenter.longitude),
-        zoom: Number(formData.get('zoom') ?? defaultCenter.zoom),
+        latitude,
+        longitude,
+        zoom,
       },
-      reportingArea,
+      ...(reportingArea ? { reportingArea } : {}),
       reportExpiryDays: formData.get('reportExpiryDays')
         ? Number(formData.get('reportExpiryDays'))
         : undefined,
@@ -121,9 +133,14 @@ export function AdminApp({
       error?: string;
       id?: string;
       url?: string;
+      details?: { path?: (string | number)[]; message?: string }[];
     };
     if (!response.ok) {
-      setMessage(data.error ?? 'Could not create incident');
+      const detail = data.details?.[0];
+      const field = detail?.path?.length ? ` (${detail.path.join('.')})` : '';
+      setMessage(
+        `${data.error ?? 'Could not create incident'}${field}${detail?.message ? `: ${detail.message}` : ''}`,
+      );
       return;
     }
     form.reset();
