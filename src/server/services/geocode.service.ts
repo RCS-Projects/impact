@@ -9,16 +9,18 @@ import * as geocodeCacheRepo from '../repos/geocode-cache.repo';
 const UNAVAILABLE_MESSAGE =
   'Address search is temporarily unavailable. You can still place a pin on the map.';
 
+const boundarySchema = z.object({
+  type: z.enum(['Polygon', 'MultiPolygon']),
+  coordinates: z.array(z.unknown()),
+});
+
 const upstreamResultSchema = z.object({
   display_name: z.string().max(500),
   lat: z.string().regex(/^-?\d+(\.\d+)?$/),
   lon: z.string().regex(/^-?\d+(\.\d+)?$/),
-  geojson: z
-    .object({
-      type: z.enum(['Polygon', 'MultiPolygon']),
-      coordinates: z.array(z.unknown()),
-    })
-    .optional(),
+  // Nominatim also returns point/line geometries for some matching results.
+  // Those are valid search results, but cannot be used as reporting boundaries.
+  geojson: z.unknown().optional(),
   address: z
     .object({
       municipality: z.string().optional(),
@@ -104,7 +106,7 @@ export async function search(query: string): Promise<{ results: GeocodeResult[] 
         item.address?.village ??
         item.address?.hamlet ??
         undefined,
-      boundary: item.geojson,
+      boundary: boundarySchema.safeParse(item.geojson).data,
     })),
   };
   // Search responses can contain full address strings; retain them only briefly.
