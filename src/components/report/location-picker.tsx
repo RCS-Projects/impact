@@ -74,7 +74,7 @@ export function LocationPicker({
           id: 'reporting-area-line',
           type: 'line',
           source: 'reporting-area',
-          paint: { 'line-color': '#f5a524', 'line-width': 2, 'line-dasharray': [2, 2] },
+          paint: { 'line-color': '#4da3ff', 'line-width': 3 },
         });
       }
     });

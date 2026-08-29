@@ -71,11 +71,13 @@ const STATUS_VALUES = new Set([
 export const GET = handleApi(
   async (request: NextRequest, { params }: { params: Promise<{ reference: string }> }) => {
     const { reference } = await params;
+    const all = request.nextUrl.searchParams.get('all') === 'true';
     const bounds = boundsInput.safeParse(Object.fromEntries(request.nextUrl.searchParams));
     if (
-      !bounds.success ||
-      bounds.data.west > bounds.data.east ||
-      bounds.data.south > bounds.data.north
+      !all &&
+      (!bounds.success ||
+        bounds.data.west > bounds.data.east ||
+        bounds.data.south > bounds.data.north)
     )
       return NextResponse.json(
         { error: 'Valid map bounds are required', code: 'bad_request' },
@@ -97,7 +99,7 @@ export const GET = handleApi(
 
     const result = await queryPublicReports({
       reference,
-      bounds: bounds.data,
+      bounds: all ? undefined : bounds.data,
       statuses,
       fieldFilters,
     });

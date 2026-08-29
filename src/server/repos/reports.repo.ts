@@ -64,7 +64,7 @@ export function insert(
 export function queryPublic(
   db: postgres.Sql,
   incidentId: string,
-  bounds: ReportBounds,
+  bounds: ReportBounds | undefined,
   options: PublicQueryOptions,
 ) {
   const statuses = options.statuses.length > 0 ? options.statuses : PUBLIC_VISIBLE_STATUSES;
@@ -75,6 +75,9 @@ export function queryPublic(
     filterClauses.length > 0
       ? filterClauses.reduce((acc, clause) => db`${acc} AND ${clause}`)
       : db`TRUE`;
+  const boundsFilter = bounds
+    ? db`AND report_geometry && ST_MakeEnvelope(${bounds.west}, ${bounds.south}, ${bounds.east}, ${bounds.north}, 4326)::geography`
+    : db``;
   return db<PublicReportRow[]>`
     SELECT id, answers, public_place_label AS "placeLabel", location_privacy::text AS privacy,
       ST_X(public_coordinate::geometry) AS longitude, ST_Y(public_coordinate::geometry) AS latitude,
@@ -85,7 +88,7 @@ export function queryPublic(
     WHERE incident_id = ${incidentId}
       AND status::text = ANY(${statuses})
       AND (expires_at IS NULL OR expires_at > now())
-      AND report_geometry && ST_MakeEnvelope(${bounds.west}, ${bounds.south}, ${bounds.east}, ${bounds.north}, 4326)::geography
+      ${boundsFilter}
       AND ${where}
     ORDER BY created_at DESC
     LIMIT 500

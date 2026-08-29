@@ -1,5 +1,8 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
+import { useRef } from 'react';
+import maplibregl from 'maplibre-gl';
+import 'maplibre-gl/dist/maplibre-gl.css';
 import { STATUS_LABELS, type ReportStatus } from '@/shared/types';
 import { getCsrfToken } from '@/lib/csrf';
 import { formatRelativeTime } from '@/lib/format';
@@ -15,6 +18,8 @@ interface QueueReport {
   placeLabel: string | null;
   privacy: string;
   createdAt: string;
+  longitude: number;
+  latitude: number;
 }
 
 interface IncidentOption {
@@ -39,6 +44,8 @@ const REASON_LABELS: Record<string, string> = {
 };
 
 export function ModerationApp() {
+  const mapContainer = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<maplibregl.Map>();
   const [reports, setReports] = useState<QueueReport[]>([]);
   const [incidents, setIncidents] = useState<IncidentOption[]>([]);
   const [incidentId, setIncidentId] = useState('');
@@ -56,6 +63,7 @@ export function ModerationApp() {
     latitude: number;
     longitude: number;
   } | null>(null);
+  const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
   const limit = 25;
 
   const load = useCallback(async () => {
@@ -84,6 +92,55 @@ export function ModerationApp() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    if (viewMode !== 'map' || !mapContainer.current || mapRef.current) return;
+    const map = new maplibregl.Map({
+      container: mapContainer.current,
+      style:
+        process.env.NEXT_PUBLIC_MAP_STYLE_URL ?? 'https://tiles.openfreemap.org/styles/liberty',
+      center: [-75.6972, 45.4215],
+      zoom: 7,
+    });
+    map.addControl(new maplibregl.NavigationControl(), 'top-right');
+    map.on('load', () => {
+      map.addSource('admin-reports', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+      });
+      map.addLayer({
+        id: 'admin-report-points',
+        type: 'circle',
+        source: 'admin-reports',
+        paint: {
+          'circle-color': ['match', ['get', 'status'], 'flagged', '#e5534b', '#4da3ff'],
+          'circle-radius': 8,
+          'circle-stroke-color': '#fff',
+          'circle-stroke-width': 1,
+        },
+      });
+    });
+    mapRef.current = map;
+    return () => {
+      map.remove();
+      mapRef.current = undefined;
+    };
+  }, [viewMode]);
+
+  useEffect(() => {
+    const source = mapRef.current?.getSource('admin-reports') as
+      | maplibregl.GeoJSONSource
+      | undefined;
+    if (!source) return;
+    source.setData({
+      type: 'FeatureCollection',
+      features: reports.map((report) => ({
+        type: 'Feature',
+        properties: { id: report.id, status: report.status },
+        geometry: { type: 'Point', coordinates: [report.longitude, report.latitude] },
+      })),
+    });
+  }, [reports]);
 
   useEffect(() => {
     void (async () => {
@@ -288,112 +345,135 @@ export function ModerationApp() {
 
       {error && <p className="notice notice-error">{error}</p>}
 
-      <div className="table-wrap">
-        <table className="data">
-          <thead>
-            <tr>
-              <th className="u-w40">
-                <input
-                  type="checkbox"
-                  checked={selected.size === reports.length && reports.length > 0}
-                  onChange={toggleSelectAll}
-                />
-              </th>
-              <th>Report</th>
-              <th>Incident</th>
-              <th>Status</th>
-              <th>Signals</th>
-              <th>Answers</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {reports.map((report) => (
-              <tr key={report.id}>
-                <td>
+      <div className="buttons">
+        <button
+          type="button"
+          className="button button-secondary button-sm"
+          onClick={() => setViewMode('list')}
+        >
+          List view
+        </button>
+        <button
+          type="button"
+          className="button button-secondary button-sm"
+          onClick={() => setViewMode('map')}
+        >
+          Map view
+        </button>
+      </div>
+
+      {viewMode === 'map' && (
+        <div ref={mapContainer} className="moderation-map" aria-label="Report map" />
+      )}
+
+      {viewMode === 'list' && (
+        <div className="table-wrap">
+          <table className="data">
+            <thead>
+              <tr>
+                <th className="u-w40">
                   <input
                     type="checkbox"
-                    checked={selected.has(report.id)}
-                    onChange={() => toggleSelect(report.id)}
+                    checked={selected.size === reports.length && reports.length > 0}
+                    onChange={toggleSelectAll}
                   />
-                </td>
-                <td>
-                  {report.placeLabel ?? 'No label'}
-                  <br />
-                  <span className="hint">
-                    {formatRelativeTime(report.createdAt)} · {report.privacy}
-                  </span>
-                </td>
-                <td>{report.incidentTitle}</td>
-                <td>
-                  <span className={`chip chip-${report.status}`}>
-                    {STATUS_LABELS[report.status]}
-                  </span>
-                </td>
-                <td>
-                  {report.suspiciousReasons.length === 0 ? (
-                    <span className="hint">none</span>
-                  ) : (
-                    report.suspiciousReasons.map((reason) => (
-                      <span key={reason} className="chip chip-flagged u-m2">
-                        {REASON_LABELS[reason] ?? reason}
-                      </span>
-                    ))
-                  )}
-                </td>
-                <td className="u-max280">
-                  {Object.entries(report.answers).map(([key, value]) => (
-                    <div key={key}>
-                      <span className="hint">{key.replaceAll('_', ' ')}:</span>{' '}
-                      {value && typeof value === 'object' && 'url' in value ? (
-                        <img
-                          src={(value as { url: string }).url}
-                          alt="Uploaded report photo"
-                          width={(value as { width?: number }).width}
-                          height={(value as { height?: number }).height}
-                          className="u-photo-thumb"
-                        />
-                      ) : Array.isArray(value) ? (
-                        value.join(', ')
-                      ) : (
-                        String(value)
-                      )}
-                    </div>
-                  ))}
-                </td>
-                <td>
-                  <div className="page-actions">
-                    <button
-                      type="button"
-                      className="button button-secondary button-sm"
-                      onClick={() => setSelectedReport(report)}
-                    >
-                      Details
-                    </button>
-                    {ACTIONS.map((action) => (
-                      <button
-                        key={action.action}
-                        type="button"
-                        className={`button button-sm ${action.className ?? 'button-secondary'}`}
-                        onClick={() => act(report.id, action.action)}
-                      >
-                        {action.label}
-                      </button>
+                </th>
+                <th>Report</th>
+                <th>Incident</th>
+                <th>Status</th>
+                <th>Signals</th>
+                <th>Answers</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {reports.map((report) => (
+                <tr key={report.id}>
+                  <td>
+                    <input
+                      type="checkbox"
+                      checked={selected.has(report.id)}
+                      onChange={() => toggleSelect(report.id)}
+                    />
+                  </td>
+                  <td>
+                    {report.placeLabel ?? 'No label'}
+                    <br />
+                    <span className="hint">
+                      {formatRelativeTime(report.createdAt)} · {report.privacy}
+                    </span>
+                  </td>
+                  <td>{report.incidentTitle}</td>
+                  <td>
+                    <span className={`chip chip-${report.status}`}>
+                      {STATUS_LABELS[report.status]}
+                    </span>
+                  </td>
+                  <td>
+                    {report.suspiciousReasons.length === 0 ? (
+                      <span className="hint">none</span>
+                    ) : (
+                      report.suspiciousReasons.map((reason) => (
+                        <span key={reason} className="chip chip-flagged u-m2">
+                          {REASON_LABELS[reason] ?? reason}
+                        </span>
+                      ))
+                    )}
+                  </td>
+                  <td className="u-max280">
+                    {Object.entries(report.answers).map(([key, value]) => (
+                      <div key={key}>
+                        <span className="hint">{key.replaceAll('_', ' ')}:</span>{' '}
+                        {value && typeof value === 'object' && 'url' in value ? (
+                          <img
+                            src={(value as { url: string }).url}
+                            alt="Uploaded report photo"
+                            width={(value as { width?: number }).width}
+                            height={(value as { height?: number }).height}
+                            className="u-photo-thumb"
+                          />
+                        ) : Array.isArray(value) ? (
+                          value.join(', ')
+                        ) : (
+                          String(value)
+                        )}
+                      </div>
                     ))}
-                  </div>
-                </td>
-              </tr>
-            ))}
-            {reports.length === 0 && (
-              <tr>
-                <td colSpan={7} className="hint">
-                  No reports match these filters.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+                  </td>
+                  <td>
+                    <div className="page-actions">
+                      <button
+                        type="button"
+                        className="button button-secondary button-sm"
+                        onClick={() => setSelectedReport(report)}
+                      >
+                        Details
+                      </button>
+                      {ACTIONS.map((action) => (
+                        <button
+                          key={action.action}
+                          type="button"
+                          className={`button button-sm ${action.className ?? 'button-secondary'}`}
+                          onClick={() => act(report.id, action.action)}
+                        >
+                          {action.label}
+                        </button>
+                      ))}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {reports.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="hint">
+                    No reports match these filters.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {selectedReport && (
         <aside className="moderation-detail" aria-label="Selected report details">

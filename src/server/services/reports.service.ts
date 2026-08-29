@@ -243,7 +243,7 @@ export async function createReport(
 
 export interface PublicQueryInput {
   reference: string;
-  bounds: ReportBounds;
+  bounds?: ReportBounds;
   statuses: ReportStatus[];
   fieldFilters: Record<string, string[]>;
 }

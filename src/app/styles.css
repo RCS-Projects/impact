@@ -568,6 +568,17 @@ a {
   position: absolute;
   inset: 0;
 }
+.moderation-map {
+  height: 420px;
+  min-height: 300px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.moderation-map .maplibregl-map {
+  width: 100%;
+  height: 100%;
+}
 .map-note {
   position: absolute;
   left: 0.75rem;

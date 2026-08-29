@@ -60,6 +60,7 @@ export function IncidentMapView(props: IncidentMapViewProps) {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [loadError, setLoadError] = useState('');
   const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
+  const [reportScope, setReportScope] = useState<'all' | 'viewport'>('all');
   const fallbackPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -87,13 +88,15 @@ export function IncidentMapView(props: IncidentMapViewProps) {
   const loadReports = useCallback(async () => {
     const map = mapRef.current;
     if (!map) return;
-    const bounds = map.getBounds();
-    const params = new URLSearchParams({
-      west: bounds.getWest().toFixed(5),
-      south: bounds.getSouth().toFixed(5),
-      east: bounds.getEast().toFixed(5),
-      north: bounds.getNorth().toFixed(5),
-    });
+    const params = new URLSearchParams();
+    if (reportScope === 'all') params.set('all', 'true');
+    else {
+      const bounds = map.getBounds();
+      params.set('west', bounds.getWest().toFixed(5));
+      params.set('south', bounds.getSouth().toFixed(5));
+      params.set('east', bounds.getEast().toFixed(5));
+      params.set('north', bounds.getNorth().toFixed(5));
+    }
     const { activeStatuses: statuses, fieldFilters: filters } = stateRef.current;
     if (statuses.size > 0) params.set('status', [...statuses].join(','));
     for (const [key, values] of Object.entries(filters))
@@ -116,12 +119,10 @@ export function IncidentMapView(props: IncidentMapViewProps) {
     } catch {
       setLoadError('Could not refresh reports.');
     }
-  }, [props.reference]);
+  }, [props.reference, reportScope]);
 
   const ds = props.displaySettings ?? {};
   const dsPointRadius = typeof ds.pointRadius === 'number' ? ds.pointRadius : 10;
-  const dsClusterRadius = typeof ds.clusterRadius === 'number' ? ds.clusterRadius : 45;
-  const dsClusterMaxZoom = typeof ds.clusterMaxZoom === 'number' ? ds.clusterMaxZoom : 14;
   const dsShowDescription = ds.showDescription !== false;
 
   useEffect(() => {
@@ -139,9 +140,7 @@ export function IncidentMapView(props: IncidentMapViewProps) {
       map.addSource('reports', {
         type: 'geojson',
         data: { type: 'FeatureCollection', features: [] },
-        cluster: true,
-        clusterMaxZoom: dsClusterMaxZoom,
-        clusterRadius: dsClusterRadius,
+        cluster: false,
       });
       map.addSource('privacy-circles', {
         type: 'geojson',
@@ -230,7 +229,7 @@ export function IncidentMapView(props: IncidentMapViewProps) {
           id: 'reporting-area-line',
           type: 'line',
           source: 'reporting-area',
-          paint: { 'line-color': '#f5a524', 'line-width': 2, 'line-dasharray': [2, 2] },
+          paint: { 'line-color': '#4da3ff', 'line-width': 3 },
         });
       }
 
@@ -453,6 +452,13 @@ export function IncidentMapView(props: IncidentMapViewProps) {
         >
           {viewMode === 'map' ? 'List view' : 'Map view'}
         </button>
+        <button
+          type="button"
+          className="button button-secondary button-sm"
+          onClick={() => setReportScope(reportScope === 'all' ? 'viewport' : 'all')}
+        >
+          {reportScope === 'all' ? 'Current area' : 'All submissions'}
+        </button>
         {props.incidentStatus === 'live' && (
           <a className="button button-sm topbar-cta" href={`/map/${props.reference}/report`}>
             Submit a Report
@@ -464,7 +470,9 @@ export function IncidentMapView(props: IncidentMapViewProps) {
         <div ref={container} className="map" aria-label="Interactive incident map" />
         {viewMode === 'list' && (
           <section className="report-list-panel" aria-label="Reports in current view">
-            <h2>Reports in view ({reports.length})</h2>
+            <h2>
+              {reportScope === 'all' ? 'All submissions' : 'Reports in view'} ({reports.length})
+            </h2>
             {reports.length === 0 && <p className="hint">No reports match the current filters.</p>}
             {reports.map((report) => (
               <button
