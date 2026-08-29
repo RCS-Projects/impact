@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { AppError } from '@/server/app-error';
 import { handleApi } from '@/server/errors';
 import { getSql } from '@/server/db/client';
 import { noStore } from '@/server/http';
-import { requireAdminRole } from '@/server/services/auth.service';
+import { requireAdmin } from '@/server/services/auth.service';
 import * as incidentsRepo from '@/server/repos/incidents.repo';
 import * as auditRepo from '@/server/repos/audit.repo';
 
@@ -11,7 +12,10 @@ export const dynamic = 'force-dynamic';
 export const GET = handleApi(
   async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
     const { id } = await params;
-    const admin = await requireAdminRole(request);
+    // This is a read-only download. Authentication and role checks are required,
+    // but CSRF is intentionally limited to state-changing admin requests.
+    const admin = await requireAdmin();
+    if (admin.role !== 'admin') throw AppError.forbidden('Administrators only');
     const db = getSql();
     const incident = await incidentsRepo.findByIdForAdmin(db, id);
     if (!incident) return NextResponse.json({ error: 'Not found' }, { status: 404 });
