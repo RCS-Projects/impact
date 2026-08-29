@@ -35,9 +35,9 @@ Enforcement is structural, not conventional:
 - One active report per browser per incident (unique constraint) with a private edit
   link for updates instead of new pins.
 - DB-backed sliding-window rate limits on submission, editing, login, and geocoding.
-- Duplicate-content detection across an incident.
-- Suspicious heuristics (rapid submission, duplicate content, repeated CAPTCHA failures,
-  implausible location moves on edit) set status `flagged`, which is invisible publicly.
+- Browser-token uniqueness prevents duplicate submissions from the same browser. IP hashes are
+  used for rate limiting only; reports are not automatically flagged based on shared networks,
+  duplicate content, CAPTCHA history, or edit distance.
 
 ## Authentication and admin protection
 

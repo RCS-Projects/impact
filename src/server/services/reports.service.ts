@@ -161,13 +161,11 @@ export async function createReport(
       'A report already exists for this browser on this incident. Use your private edit link to update it.',
     );
 
+  // The browser token above prevents duplicate submissions from the same
+  // browser. IP hashes are used for rate limiting only; shared networks must
+  // not cause legitimate reports to be held for moderation.
   const contentHash = hashContent(answers);
   const suspicious: string[] = [];
-  if (await reportsRepo.contentHashExists(db, incident.id, contentHash))
-    suspicious.push('duplicate_content');
-  if ((await reportsRepo.countRecentByIp(db, incident.id, ipHash, 15)) >= 2)
-    suspicious.push('rapid_submission');
-  if ((await captcha.failureCount(ipHash)) >= 3) suspicious.push('captcha_failures');
 
   const editToken = newOpaqueToken();
   const publicPoint =
@@ -368,7 +366,6 @@ export async function updateReport(reportId: string, token: string, input: Updat
     radius = PRIVACY_RADIUS_METERS;
   }
 
-  const suspicious = movedMeters > 50_000 ? ['implausible_move'] : undefined;
   await reportsPrivateRepo.update(db, reportId, {
     answers: resolvedPhotos.answers,
     privacy,
@@ -376,7 +373,6 @@ export async function updateReport(reportId: string, token: string, input: Updat
     radius,
     privatePointWkt: privateWkt,
     placeLabel: derivedPlaceLabel,
-    suspiciousReasons: suspicious,
     uploadIds: resolvedPhotos.uploadIds,
     uploadClaimHash: input.uploadClaimToken ? hashBrowserToken(input.uploadClaimToken) : undefined,
     reportGeometryGeoJson: JSON.stringify(geometry),

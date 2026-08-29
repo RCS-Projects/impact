@@ -72,8 +72,8 @@ never break URLs. Drafts are unresolvable publicly; `live` and `closed` resolve.
 4. Server-side schema validation of answers (undeclared fields rejected)
 5. Geofence check against the incident reporting area (PostGIS `ST_Covers`)
 6. Browser-token uniqueness per incident (one active report per browser)
-7. Suspicious heuristics: duplicate content hash, rapid submissions from the same IP,
-   repeated CAPTCHA failures → status `flagged`, otherwise `unverified`
+7. Browser-token uniqueness prevents duplicate reports from one browser; IP hashes are used
+   for rate limiting only. New reports are `unverified` unless an administrator flags them.
 8. Transaction: insert report (public projection), insert private location, write audit
 9. Response: report id + one-time edit URL; persistent browser cookie set
 

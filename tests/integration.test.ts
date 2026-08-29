@@ -248,7 +248,7 @@ describe.runIf(available)('PostGIS integration', () => {
     ).rejects.toMatchObject({ status: 409 });
   });
 
-  it('flags duplicate content from a different browser', async () => {
+  it('allows duplicate content from a different browser', async () => {
     const incident = (globalThis as Record<string, unknown>).mainIncident as Awaited<
       ReturnType<typeof makeIncident>
     >;
@@ -263,10 +263,10 @@ describe.runIf(available)('PostGIS integration', () => {
       browserTokenCookie: null,
       ip: '203.0.113.12',
     });
-    expect(duplicate.flagged).toBe(true);
+    expect(duplicate.flagged).toBe(false);
     const queue = await moderationRepo.listQueue(sql, {
       incidentId: incident.id,
-      statuses: ['flagged'],
+      statuses: ['unverified'],
     });
     expect(queue.some((row) => row.id === duplicate.reportId)).toBe(true);
   });
