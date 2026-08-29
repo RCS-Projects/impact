@@ -47,6 +47,10 @@ function editablePoints(value: BoundaryGeometry | null): Coords[] {
   return first[0] === last[0] && first[1] === last[1] ? ring.slice(0, -1) : [...ring];
 }
 
+function polygons(value: BoundaryGeometry): Coords[][][] {
+  return value.type === 'Polygon' ? [value.coordinates] : value.coordinates;
+}
+
 function isBoundary(value: unknown): value is BoundaryGeometry {
   if (!value || typeof value !== 'object') return false;
   const geometry = value as { type?: unknown; coordinates?: unknown };
@@ -252,9 +256,18 @@ export function PolygonEditor({
     mapRef.current?.fitBounds(bounds, { padding: 36, maxZoom: 13 });
   }
 
-  function applyBoundary(result: GeocodeResult) {
+  function currentBoundary(): BoundaryGeometry | null {
+    if (importedBoundary) return importedBoundary;
+    return points.length >= 3 ? { type: 'Polygon', coordinates: [closeRing(points)] } : null;
+  }
+
+  function applyBoundary(result: GeocodeResult, add = false) {
     if (!isBoundary(result.boundary)) return;
-    const boundary = result.boundary;
+    const selected = normalizeBoundary(result.boundary);
+    const existing = add ? currentBoundary() : null;
+    const boundary: BoundaryGeometry = existing
+      ? { type: 'MultiPolygon', coordinates: [...polygons(existing), ...polygons(selected)] }
+      : selected;
     if (boundary.type === 'Polygon') {
       const next = editablePoints(boundary);
       if (next.length < 3) return;
@@ -313,8 +326,11 @@ export function PolygonEditor({
         <ul className="search-results" aria-label="Place boundaries">
           {searchResults.map((result, index) => (
             <li key={`${result.latitude}-${result.longitude}-${index}`}>
-              <button type="button" onClick={() => applyBoundary(result)}>
-                Outline {result.label}
+              <button
+                type="button"
+                onClick={() => applyBoundary(result, Boolean(currentBoundary()))}
+              >
+                {currentBoundary() ? 'Add' : 'Outline'} {result.label}
               </button>
             </li>
           ))}
