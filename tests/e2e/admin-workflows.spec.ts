@@ -25,19 +25,14 @@ async function csrfHeader(page: any) {
 }
 
 async function signIn(page: any) {
-  await page.goto('/admin');
-  await page.fill('input[name="login"]', ADMIN_LOGIN);
-  await page.fill('input[name="password"]', ADMIN_PASSWORD);
-  await page.click('button:has-text("Sign in")');
-  try {
-    await page.waitForSelector('text=Incident maps', { timeout: 5000 });
-  } catch {
-    await page.request.post('/api/admin/login', {
-      data: { login: ADMIN_LOGIN, password: ADMIN_PASSWORD },
-    });
-    await page.goto('/admin');
-    await page.waitForSelector('text=Incident maps');
+  const response = await page.request.post('/api/admin/login', {
+    data: { login: ADMIN_LOGIN, password: ADMIN_PASSWORD },
+  });
+  if (!response.ok()) {
+    throw new Error(`Admin login failed: ${response.status()} ${await response.text()}`);
   }
+  await page.goto('/admin');
+  await page.waitForSelector('text=Incident maps');
 }
 
 async function createAndPublishIncident(page: any, title: string) {
