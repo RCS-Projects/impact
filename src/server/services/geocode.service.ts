@@ -13,6 +13,12 @@ const upstreamResultSchema = z.object({
   display_name: z.string().max(500),
   lat: z.string().regex(/^-?\d+(\.\d+)?$/),
   lon: z.string().regex(/^-?\d+(\.\d+)?$/),
+  geojson: z
+    .object({
+      type: z.enum(['Polygon', 'MultiPolygon']),
+      coordinates: z.array(z.unknown()),
+    })
+    .optional(),
   address: z
     .object({
       municipality: z.string().optional(),
@@ -59,6 +65,7 @@ export async function search(query: string): Promise<{ results: GeocodeResult[] 
     addressdetails: '1',
     countrycodes: 'ca',
     limit: '6',
+    polygon_geojson: '1',
   }).toString();
 
   let response: Response;
@@ -97,6 +104,7 @@ export async function search(query: string): Promise<{ results: GeocodeResult[] 
         item.address?.village ??
         item.address?.hamlet ??
         undefined,
+      boundary: item.geojson,
     })),
   };
   // Search responses can contain full address strings; retain them only briefly.

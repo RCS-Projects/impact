@@ -4,6 +4,10 @@ COPY package.json package-lock.json ./
 RUN npm ci
 
 FROM node:20-alpine AS build
+ARG GIT_COMMIT=unknown
+ARG BUILD_TIME=unknown
+ENV GIT_COMMIT=$GIT_COMMIT
+ENV BUILD_TIME=$BUILD_TIME
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
@@ -11,8 +15,10 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
 FROM node:20-alpine AS runtime
+ARG GIT_COMMIT=unknown
+ARG BUILD_TIME=unknown
+ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 GIT_COMMIT=$GIT_COMMIT BUILD_TIME=$BUILD_TIME
 WORKDIR /app
-ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1
 RUN addgroup -S impact && adduser -S impact -G impact
 COPY --from=build --chown=impact:impact /app/.next ./.next
 COPY --from=build --chown=impact:impact /app/node_modules ./node_modules

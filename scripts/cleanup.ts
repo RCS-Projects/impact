@@ -1,7 +1,6 @@
 import postgres from 'postgres';
 import { unlink } from 'node:fs/promises';
 import path from 'node:path';
-
 export async function runCleanup() {
   const databaseUrl = process.env.DATABASE_URL;
   if (!databaseUrl) {

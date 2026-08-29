@@ -1,9 +1,36 @@
 'use client';
+
 import { useCallback, useEffect, useRef, useState } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import type { GeocodeResult } from '@/shared/types';
 
 type Coords = [number, number];
+export type BoundaryGeometry =
+  | { type: 'Polygon'; coordinates: Coords[][] }
+  | { type: 'MultiPolygon'; coordinates: Coords[][][] };
+
+function closeRing(points: Coords[]) {
+  return points.length >= 3 ? [...points, points[0]!] : points;
+}
+
+function editablePoints(value: BoundaryGeometry | null): Coords[] {
+  if (!value || value.type !== 'Polygon') return [];
+  const ring = value.coordinates[0] ?? [];
+  if (ring.length < 2) return [];
+  const first = ring[0]!;
+  const last = ring[ring.length - 1]!;
+  return first[0] === last[0] && first[1] === last[1] ? ring.slice(0, -1) : [...ring];
+}
+
+function isBoundary(value: unknown): value is BoundaryGeometry {
+  if (!value || typeof value !== 'object') return false;
+  const geometry = value as { type?: unknown; coordinates?: unknown };
+  return (
+    (geometry.type === 'Polygon' || geometry.type === 'MultiPolygon') &&
+    Array.isArray(geometry.coordinates)
+  );
+}
 
 export function PolygonEditor({
   center,
@@ -11,76 +38,94 @@ export function PolygonEditor({
   onChange,
 }: {
   center: [number, number];
-  value: Coords[] | null;
-  onChange: (polygon: Coords[] | null) => void;
+  value: BoundaryGeometry | null;
+  onChange: (polygon: BoundaryGeometry | null) => void;
 }) {
   const container = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map>();
   const markersRef = useRef<maplibregl.Marker[]>([]);
+  const pointsRef = useRef<Coords[]>(editablePoints(value));
+  const savedPointsRef = useRef<Coords[]>(pointsRef.current);
+  const drawingRef = useRef(false);
+  const editingRef = useRef(false);
+  const [points, setPoints] = useState<Coords[]>(pointsRef.current);
+  const [importedBoundary, setImportedBoundary] = useState<BoundaryGeometry | null>(
+    value?.type === 'MultiPolygon' ? value : null,
+  );
   const [drawing, setDrawing] = useState(false);
-  const [coords, setCoords] = useState<Coords[]>(value ?? []);
-  const coordsRef = useRef(coords);
-  coordsRef.current = coords;
+  const [editing, setEditing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<GeocodeResult[]>([]);
+  const [searchState, setSearchState] = useState<'idle' | 'searching' | 'error'>('idle');
 
-  const syncMarkers = useCallback(
-    (map: maplibregl.Map, pts: Coords[]) => {
-      markersRef.current.forEach((m) => m.remove());
-      markersRef.current = [];
-      pts.forEach((c, i) => {
-        const el = document.createElement('div');
-        el.style.cssText =
-          'width:12px;height:12px;border-radius:50%;background:#f5a524;border:2px solid #0d1215;cursor:grab;';
-        const marker = new maplibregl.Marker({ element: el, draggable: true })
-          .setLngLat(c)
-          .addTo(map);
-        marker.on('dragend', () => {
-          const ll = marker.getLngLat();
-          const next = [...coordsRef.current];
-          next[i] = [ll.lng, ll.lat];
-          setCoords(next);
-          onChange(next.length >= 3 ? next : null);
-        });
-        markersRef.current.push(marker);
-      });
-    },
-    [onChange],
+  drawingRef.current = drawing;
+  editingRef.current = editing;
+  pointsRef.current = points;
+
+  const geometry = useCallback(
+    (nextPoints = pointsRef.current): BoundaryGeometry | null =>
+      importedBoundary ??
+      (nextPoints.length >= 3 ? { type: 'Polygon', coordinates: [closeRing(nextPoints)] } : null),
+    [importedBoundary],
   );
 
   const updateSource = useCallback(
-    (map: maplibregl.Map, pts: Coords[]) => {
-      const src = map.getSource('polygon') as maplibregl.GeoJSONSource | undefined;
-      const geojson: GeoJSON.Feature =
-        pts.length >= 3
-          ? {
-              type: 'Feature',
-              geometry: { type: 'Polygon', coordinates: [pts] },
-              properties: {},
-            }
-          : {
-              type: 'Feature',
-              geometry: { type: 'Point', coordinates: pts[0] ?? center },
-              properties: {},
-            };
-      if (src) {
-        src.setData(geojson);
-      } else {
-        map.addSource('polygon', { type: 'geojson', data: geojson });
+    (map: maplibregl.Map, nextPoints = pointsRef.current) => {
+      const source = map.getSource('polygon') as maplibregl.GeoJSONSource | undefined;
+      const nextGeometry = geometry(nextPoints);
+      const data: GeoJSON.Feature = nextGeometry
+        ? { type: 'Feature', geometry: nextGeometry, properties: {} }
+        : {
+            type: 'Feature',
+            geometry: { type: 'Point', coordinates: nextPoints[0] ?? center },
+            properties: {},
+          };
+      if (source) source.setData(data);
+      else {
+        map.addSource('polygon', { type: 'geojson', data });
         map.addLayer({
           id: 'polygon-fill',
           type: 'fill',
           source: 'polygon',
-          paint: { 'fill-color': '#f5a524', 'fill-opacity': 0.12 },
+          paint: { 'fill-color': '#f5a524', 'fill-opacity': 0.16 },
         });
         map.addLayer({
           id: 'polygon-line',
           type: 'line',
           source: 'polygon',
-          paint: { 'line-color': '#f5a524', 'line-width': 2 },
+          paint: { 'line-color': '#f5a524', 'line-width': 3 },
         });
       }
-      syncMarkers(map, pts);
     },
-    [center, syncMarkers],
+    [center, geometry],
+  );
+
+  const syncMarkers = useCallback(
+    (map: maplibregl.Map, nextPoints = pointsRef.current) => {
+      markersRef.current.forEach((marker) => marker.remove());
+      markersRef.current = [];
+      if (!editingRef.current || importedBoundary) return;
+      nextPoints.forEach((point, index) => {
+        const element = document.createElement('button');
+        element.type = 'button';
+        element.className = 'geometry-vertex-handle';
+        element.setAttribute('aria-label', `Move boundary point ${index + 1}`);
+        const marker = new maplibregl.Marker({ element, draggable: true })
+          .setLngLat(point)
+          .addTo(map);
+        marker.on('dragend', () => {
+          const location = marker.getLngLat();
+          setPoints((current) => {
+            const next = [...current];
+            next[index] = [location.lng, location.lat];
+            onChange({ type: 'Polygon', coordinates: [closeRing(next)] });
+            return next;
+          });
+        });
+        markersRef.current.push(marker);
+      });
+    },
+    [importedBoundary, onChange],
   );
 
   useEffect(() => {
@@ -93,65 +138,173 @@ export function PolygonEditor({
       zoom: 11,
     });
     map.addControl(new maplibregl.NavigationControl(), 'top-left');
-
     map.on('load', () => {
-      if (coordsRef.current.length > 0) updateSource(map, coordsRef.current);
+      updateSource(map);
+      syncMarkers(map);
     });
-
-    map.on('click', (e) => {
-      if (!drawing) return;
-      const c: Coords = [e.lngLat.lng, e.lngLat.lat];
-      const next = [...coordsRef.current, c];
-      setCoords(next);
-      onChange(next.length >= 3 ? next : null);
-      updateSource(map, next);
+    map.on('click', (event) => {
+      if (!drawingRef.current || editingRef.current) return;
+      setImportedBoundary(null);
+      setPoints((current) => {
+        const next: Coords[] = [...current, [event.lngLat.lng, event.lngLat.lat]];
+        onChange(next.length >= 3 ? { type: 'Polygon', coordinates: [closeRing(next)] } : null);
+        return next;
+      });
     });
-
     mapRef.current = map;
+    const resize = new ResizeObserver(() => map.resize());
+    resize.observe(container.current);
     return () => {
+      resize.disconnect();
+      markersRef.current.forEach((marker) => marker.remove());
       map.remove();
       mapRef.current = undefined;
-      markersRef.current = [];
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [center, onChange, syncMarkers, updateSource]);
 
   useEffect(() => {
     const map = mapRef.current;
-    if (map && map.isStyleLoaded()) updateSource(map, coords);
-  }, [coords, updateSource]);
+    if (!map || !map.isStyleLoaded()) return;
+    updateSource(map, points);
+    syncMarkers(map, points);
+  }, [importedBoundary, points, syncMarkers, updateSource]);
 
-  function clear() {
-    setCoords([]);
-    onChange(null);
+  useEffect(() => {
     const map = mapRef.current;
-    if (map) {
-      const src = map.getSource('polygon') as maplibregl.GeoJSONSource | undefined;
-      src?.setData({ type: 'Point', coordinates: center });
-      markersRef.current.forEach((m) => m.remove());
-      markersRef.current = [];
+    if (!map) return;
+    if (drawing && !editing) map.dragPan.disable();
+    else map.dragPan.enable();
+    map.resize();
+  }, [drawing, editing]);
+
+  useEffect(() => {
+    const query = searchQuery.trim();
+    if (query.length < 3) {
+      setSearchResults([]);
+      setSearchState('idle');
+      return;
     }
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      setSearchState('searching');
+      try {
+        const response = await fetch(`/api/geocode/search?q=${encodeURIComponent(query)}`, {
+          signal: controller.signal,
+        });
+        const data = (await response.json().catch(() => ({}))) as { results?: GeocodeResult[] };
+        if (!response.ok) throw new Error('Search unavailable');
+        setSearchResults((data.results ?? []).filter((result) => isBoundary(result.boundary)));
+        setSearchState('idle');
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') return;
+        setSearchResults([]);
+        setSearchState('error');
+      }
+    }, 350);
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [searchQuery]);
+
+  function commit(next: Coords[]) {
+    setImportedBoundary(null);
+    setPoints(next);
+    onChange(next.length >= 3 ? { type: 'Polygon', coordinates: [closeRing(next)] } : null);
   }
 
+  function fitBoundary(boundary: BoundaryGeometry) {
+    const flat =
+      boundary.type === 'Polygon' ? boundary.coordinates.flat() : boundary.coordinates.flat(2);
+    if (flat.length === 0) return;
+    const bounds = flat.reduce(
+      (current, point) => current.extend(point),
+      new maplibregl.LngLatBounds(flat[0], flat[0]),
+    );
+    mapRef.current?.fitBounds(bounds, { padding: 36, maxZoom: 13 });
+  }
+
+  function applyBoundary(result: GeocodeResult) {
+    if (!isBoundary(result.boundary)) return;
+    const boundary = result.boundary;
+    if (boundary.type === 'Polygon') {
+      const next = editablePoints(boundary);
+      if (next.length < 3) return;
+      setImportedBoundary(null);
+      setPoints(next);
+    } else {
+      setPoints([]);
+      setImportedBoundary(boundary);
+    }
+    onChange(boundary);
+    setDrawing(false);
+    setEditing(false);
+    setSearchResults([]);
+    setSearchQuery(result.placeLabel ?? result.label.split(',')[0] ?? '');
+    fitBoundary(boundary);
+  }
+
+  function startDrawing() {
+    savedPointsRef.current = pointsRef.current;
+    setImportedBoundary(null);
+    setDrawing(true);
+    setEditing(false);
+  }
+
+  function cancelDrawing() {
+    commit(savedPointsRef.current);
+    setDrawing(false);
+    setEditing(false);
+  }
+
+  const canEditVertices = !importedBoundary && points.length >= 3;
+
   return (
-    <div>
+    <section className="geometry-editor" aria-label="Reporting boundary editor">
+      <label className="field" htmlFor="admin-boundary-place-search">
+        Outline a city or place (optional)
+        <input
+          id="admin-boundary-place-search"
+          value={searchQuery}
+          onChange={(event) => setSearchQuery(event.target.value)}
+          placeholder="e.g. Ottawa, Ontario"
+          autoComplete="off"
+        />
+      </label>
+      {searchState === 'searching' && (
+        <p className="hint" role="status">
+          Searching for boundaries…
+        </p>
+      )}
+      {searchState === 'error' && (
+        <p className="notice notice-warning" role="status">
+          Place outline search is unavailable. You can still draw on the map.
+        </p>
+      )}
+      {searchResults.length > 0 && (
+        <ul className="search-results" aria-label="Place boundaries">
+          {searchResults.map((result, index) => (
+            <li key={`${result.latitude}-${result.longitude}-${index}`}>
+              <button type="button" onClick={() => applyBoundary(result)}>
+                Outline {result.label}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
       <div className="buttons u-buttons-polygon">
         <button
           type="button"
           className={`button button-sm ${drawing ? '' : 'button-secondary'}`}
-          onClick={() => setDrawing(!drawing)}
+          onClick={drawing ? cancelDrawing : startDrawing}
         >
-          {drawing ? 'Drawing...' : 'Draw on map'}
+          {drawing ? 'Cancel drawing' : 'Draw on map'}
         </button>
-        {drawing && coords.length > 0 && (
+        {drawing && points.length > 0 && (
           <button
             type="button"
             className="button button-secondary button-sm"
-            onClick={() => {
-              const next = coords.slice(0, -1);
-              setCoords(next);
-              onChange(next.length >= 3 ? next : null);
-            }}
+            onClick={() => commit(points.slice(0, -1))}
           >
             Undo last point
           </button>
@@ -160,21 +313,44 @@ export function PolygonEditor({
           <button
             type="button"
             className="button button-sm"
-            disabled={coords.length < 3}
+            disabled={points.length < 3}
             onClick={() => setDrawing(false)}
           >
             Finish area
           </button>
         )}
-        {coords.length > 0 && (
-          <button type="button" className="button button-secondary button-sm" onClick={clear}>
+        {(points.length > 0 || importedBoundary) && (
+          <button
+            type="button"
+            className="button button-secondary button-sm"
+            onClick={() => {
+              setImportedBoundary(null);
+              commit([]);
+              setEditing(false);
+            }}
+          >
             Clear
+          </button>
+        )}
+        {canEditVertices && (
+          <button
+            type="button"
+            className="button button-secondary button-sm"
+            onClick={() => setEditing((current) => !current)}
+          >
+            {editing ? 'Done editing' : 'Edit boundary'}
           </button>
         )}
       </div>
       {drawing && (
         <p className="hint u-mb-sm">
-          Click to place vertices. The shape auto-closes at 3+ points. Click Done when finished.
+          Click or tap to place vertices. Finish after at least three points.
+        </p>
+      )}
+      {importedBoundary?.type === 'MultiPolygon' && (
+        <p className="notice notice-warning">
+          This place has multiple areas. It will be saved as one MultiPolygon boundary; draw a new
+          area to edit individual vertices.
         </p>
       )}
       <div
@@ -183,11 +359,16 @@ export function PolygonEditor({
         role="img"
         aria-label="Draw the reporting area polygon on the map"
       />
-      {coords.length > 0 && (
+      {points.length > 0 && (
         <p className="hint">
-          {coords.length} vertex{coords.length !== 1 ? 'ices' : ''}
+          {points.length} vertex{points.length === 1 ? '' : 'ices'}
         </p>
       )}
-    </div>
+      {points.length > 0 && points.length < 3 && (
+        <p className="notice notice-warning" role="status">
+          Add at least 3 points to create a valid boundary.
+        </p>
+      )}
+    </section>
   );
 }

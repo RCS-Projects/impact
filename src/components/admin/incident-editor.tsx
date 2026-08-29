@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCsrfToken } from '@/lib/csrf';
-import { PolygonEditor } from '@/components/admin/polygon-editor';
+import { PolygonEditor, type BoundaryGeometry } from '@/components/admin/polygon-editor';
 import { FormBuilder } from '@/components/admin/form-builder';
 import type { FormField } from '@/server/schema/form-schema';
 
@@ -346,21 +346,10 @@ export function IncidentEditor({ incidentId }: { incidentId: string }) {
             </span>
             <PolygonEditor
               center={[incident.longitude, incident.latitude]}
-              value={
-                incident.reportingArea &&
-                typeof incident.reportingArea === 'object' &&
-                (incident.reportingArea as { type?: string }).type === 'Polygon'
-                  ? ((incident.reportingArea as { coordinates: [number, number][] })
-                      .coordinates[0] as unknown as [number, number][])
-                  : null
-              }
-              onChange={(coords) => {
+              value={(incident.reportingArea as BoundaryGeometry | null) ?? null}
+              onChange={(geometry) => {
                 setAreaJsonError('');
-                if (!coords || coords.length < 3) {
-                  updateField('reportingArea', null);
-                } else {
-                  updateField('reportingArea', { type: 'Polygon', coordinates: [coords] });
-                }
+                updateField('reportingArea', geometry);
               }}
             />
             <textarea

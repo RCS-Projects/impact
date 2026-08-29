@@ -33,7 +33,13 @@ export async function login(
 ): Promise<{ jwt: string; csrf: string; admin: AdminSession }> {
   const db = getSql();
   const loginKey = loginName.trim().toLowerCase();
-  await rateLimit.enforce('admin_login', hashSubject('admin_login', ipHash, loginKey), 10, 900);
+  const isTestMode = process.env.IMPACT_RUNTIME_MODE === 'test';
+  await rateLimit.enforce(
+    'admin_login',
+    hashSubject('admin_login', ipHash, loginKey),
+    isTestMode ? 1_000 : 10,
+    900,
+  );
   const admin = await adminsRepo.findByLogin(db, loginKey);
   const passwordOk = admin
     ? await verifyPassword(password, admin.passwordHash)

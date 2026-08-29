@@ -1,9 +1,9 @@
 'use client';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getCsrfToken } from '@/lib/csrf';
-import { PolygonEditor } from '@/components/admin/polygon-editor';
+import { PolygonEditor, type BoundaryGeometry } from '@/components/admin/polygon-editor';
 
 interface AdminIncident {
   id: string;
@@ -48,7 +48,7 @@ export function AdminApp({
   const [incidents, setIncidents] = useState<AdminIncident[]>([]);
   const [templates, setTemplates] = useState<TemplateOption[]>([]);
   const [templateKey, setTemplateKey] = useState('storm-damage');
-  const [reportingArea, setReportingArea] = useState<unknown | null>(null);
+  const [reportingArea, setReportingArea] = useState<BoundaryGeometry | null>(null);
   const [reportingAreaError, setReportingAreaError] = useState('');
   const [stats, setStats] = useState<DashboardStats | null>(null);
 
@@ -86,7 +86,7 @@ export function AdminApp({
       setMessage(data.error ?? 'Could not sign in');
       return;
     }
-    window.location.assign('/admin');
+    router.refresh();
   }
 
   async function logout() {
@@ -94,25 +94,28 @@ export function AdminApp({
       method: 'POST',
       headers: { 'x-csrf-token': getCsrfToken() },
     });
-    window.location.assign('/admin');
+    router.refresh();
   }
 
-  async function create(form: FormData) {
+  async function create(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
     setMessage('');
+    const form = event.currentTarget;
+    const formData = new FormData(form);
     const response = await adminApi('/api/admin/incidents', {
-      title: form.get('title'),
-      description: String(form.get('description') ?? '') || undefined,
-      templateKey: templateKey,
+      title: formData.get('title'),
+      description: String(formData.get('description') ?? '') || undefined,
+      templateKey,
       center: {
-        latitude: Number(form.get('latitude')),
-        longitude: Number(form.get('longitude')),
-        zoom: Number(form.get('zoom')),
+        latitude: Number(formData.get('latitude') ?? defaultCenter.latitude),
+        longitude: Number(formData.get('longitude') ?? defaultCenter.longitude),
+        zoom: Number(formData.get('zoom') ?? defaultCenter.zoom),
       },
       reportingArea,
-      reportExpiryDays: form.get('reportExpiryDays')
-        ? Number(form.get('reportExpiryDays'))
+      reportExpiryDays: formData.get('reportExpiryDays')
+        ? Number(formData.get('reportExpiryDays'))
         : undefined,
-      reportGeometryMode: form.get('reportGeometryMode') || 'point',
+      reportGeometryMode: formData.get('reportGeometryMode') || 'point',
     });
     const data = (await response.json().catch(() => ({}))) as {
       error?: string;
@@ -123,8 +126,9 @@ export function AdminApp({
       setMessage(data.error ?? 'Could not create incident');
       return;
     }
-    setMessage(`Draft created: ${data.url}`);
+    form.reset();
     setReportingArea(null);
+    setMessage(`Draft created: ${data.url}`);
     await refresh();
   }
 
@@ -156,6 +160,26 @@ export function AdminApp({
       return;
     }
     router.push(`/admin/incidents/${data.id}`);
+  }
+
+  async function deleteIncident(incidentId: string, title: string, status: string) {
+    if (status === 'live') {
+      setMessage('Close the live incident before deleting it.');
+      return;
+    }
+    if (!window.confirm(`Delete “${title}”? Its reports and map data will be permanently removed.`))
+      return;
+    const response = await fetch(`/api/admin/incidents/${incidentId}`, {
+      method: 'DELETE',
+      headers: { 'x-csrf-token': getCsrfToken() },
+    });
+    const data = (await response.json().catch(() => ({}))) as { error?: string };
+    if (!response.ok) {
+      setMessage(data.error ?? 'Could not delete incident');
+      return;
+    }
+    setMessage('Incident deleted.');
+    await refresh();
   }
 
   if (!signedIn) {
@@ -230,7 +254,7 @@ export function AdminApp({
 
       <section className="card">
         <h2>Create incident</h2>
-        <form action={create} className="form-block">
+        <form onSubmit={create} className="form-block">
           <label className="field">
             Title
             <input name="title" required maxLength={160} />
@@ -320,21 +344,10 @@ export function AdminApp({
             </span>
             <PolygonEditor
               center={[defaultCenter.longitude, defaultCenter.latitude]}
-              value={
-                reportingArea &&
-                typeof reportingArea === 'object' &&
-                (reportingArea as { type?: string }).type === 'Polygon'
-                  ? ((reportingArea as { coordinates: [number, number][] })
-                      .coordinates[0] as unknown as [number, number][])
-                  : null
-              }
-              onChange={(coords) => {
+              value={reportingArea}
+              onChange={(geometry) => {
                 setReportingAreaError('');
-                if (!coords || coords.length < 3) {
-                  setReportingArea(null);
-                } else {
-                  setReportingArea({ type: 'Polygon', coordinates: [coords] });
-                }
+                setReportingArea(geometry);
               }}
             />
             <textarea
@@ -347,7 +360,7 @@ export function AdminApp({
                 }
                 try {
                   setReportingAreaError('');
-                  setReportingArea(JSON.parse(raw));
+                  setReportingArea(JSON.parse(raw) as BoundaryGeometry);
                 } catch {
                   setReportingAreaError('Enter valid GeoJSON before creating the incident.');
                 }
@@ -411,6 +424,15 @@ export function AdminApp({
                         >
                           Edit
                         </a>
+                        <button
+                          type="button"
+                          className="button button-danger button-sm"
+                          onClick={() =>
+                            deleteIncident(incident.id, incident.title, incident.status)
+                          }
+                        >
+                          Delete
+                        </button>
                         <a
                           className="button button-secondary button-sm"
                           href={`/admin/moderation?incidentId=${incident.id}`}

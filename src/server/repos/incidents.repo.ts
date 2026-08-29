@@ -148,6 +148,14 @@ export function archive(db: postgres.Sql, id: string) {
   `.then((rows) => rows.length > 0);
 }
 
+export function remove(db: postgres.Sql, id: string) {
+  return db<{ id: string; status: string }[]>`
+    DELETE FROM incidents
+    WHERE id = ${id} AND status <> 'live'
+    RETURNING id, status::text AS status
+  `.then((rows) => rows[0] ?? null);
+}
+
 export interface IncidentDetailRow extends IncidentPublicRow {
   closedAt: string | null;
   archivedAt: string | null;

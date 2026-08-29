@@ -312,6 +312,20 @@ a {
   margin-top: 0;
   margin-bottom: 0.4rem;
 }
+.u-field-toggle {
+  border: 0;
+  padding: 0;
+  text-align: left;
+  color: var(--text);
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+}
+.u-field-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 3px;
+}
 .u-select-compact {
   font-size: 0.82rem;
   padding: 0.2rem 0.4rem;
@@ -758,10 +772,43 @@ button {
 }
 
 .picker-map {
+  position: relative;
+  width: 100%;
   height: 340px;
   border-radius: var(--radius);
   overflow: hidden;
   border: 1px solid var(--border);
+}
+
+.picker-map.maplibregl-map {
+  position: relative;
+}
+
+.picker-map > .maplibregl-map {
+  position: absolute;
+  inset: 0;
+}
+
+.picker-map .maplibregl-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.geometry-vertex-handle {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 3px solid var(--surface, #fff);
+  border-radius: 50%;
+  background: var(--accent, #f5a524);
+  box-shadow: 0 1px 5px rgb(0 0 0 / 45%);
+  cursor: grab;
+}
+
+.geometry-vertex-handle:active {
+  cursor: grabbing;
 }
 .search-results {
   list-style: none;

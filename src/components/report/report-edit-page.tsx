@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import type { FieldView } from '@/shared/types';
 import { ReportForm, type EditInitialData } from './report-form';
+import type { ReportGeometry } from '@/server/schema/report-geometry';
 
 interface EditPayload {
   answers: Record<string, unknown>;
@@ -17,7 +18,7 @@ interface EditPayload {
     reportingArea: unknown | null;
     reportGeometryMode: 'point' | 'polygon' | 'point_or_polygon';
   };
-  geometry?: unknown;
+  geometry?: ReportGeometry | null;
 }
 
 export function ReportEditPage({ reportId, token }: { reportId: string; token: string }) {
@@ -86,6 +87,7 @@ export function ReportEditPage({ reportId, token }: { reportId: string; token: s
                 latitude: payload.latitude,
                 longitude: payload.longitude,
                 placeLabel: payload.placeLabel,
+                geometry: payload.geometry,
               }}
               geometryMode={payload.incident.reportGeometryMode}
             />

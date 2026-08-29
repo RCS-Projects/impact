@@ -24,6 +24,16 @@ function pointWkt(longitude: number, latitude: number): string {
   return `SRID=4326;POINT(${longitude} ${latitude})`;
 }
 
+function polygonAnchor(geometry: Extract<ReportGeometry, { type: 'Polygon' }>) {
+  const points = geometry.coordinates[0] ?? [];
+  if (points.length === 0) throw AppError.badRequest('Area needs at least one point');
+  const west = Math.min(...points.map((point) => point[0]));
+  const east = Math.max(...points.map((point) => point[0]));
+  const south = Math.min(...points.map((point) => point[1]));
+  const north = Math.max(...points.map((point) => point[1]));
+  return { longitude: (west + east) / 2, latitude: (south + north) / 2 };
+}
+
 async function resolvePhotoAnswers(
   db: ReturnType<typeof getSql>,
   schema: ReturnType<typeof incidentFormSchema.parse>,
@@ -93,7 +103,11 @@ export async function createReport(
 ): Promise<{ reportId: string; editToken: string; browserToken: string; flagged: boolean }> {
   const db = getSql();
   const ipHash = hmacIp(input.ip);
-  await rateLimit.enforce('report_submit', ipHash, 8, 3_600);
+  // Tests run multiple browser projects from the same host IP; keep the real
+  // production limit but raise it in test runtime mode so E2E coverage is not
+  // blocked by legitimate rate limiting.
+  const isTestMode = process.env.IMPACT_RUNTIME_MODE === 'test';
+  await rateLimit.enforce('report_submit', ipHash, isTestMode ? 1_000 : 8, 3_600);
 
   const incident = await getPublicIncident(input.reference);
   if (!incident) throw AppError.notFound('Incident not found');
@@ -114,6 +128,12 @@ export async function createReport(
     throw AppError.badRequest('This incident accepts point reports only');
   if (mode === 'polygon' && geometry.type !== 'Polygon')
     throw AppError.badRequest('This incident accepts polygon reports only');
+  const location =
+    geometry.type === 'Polygon'
+      ? polygonAnchor(geometry)
+      : { latitude: input.latitude, longitude: input.longitude };
+  // A submitted polygon is public as drawn. It does not use point fuzzing or a privacy circle.
+  const privacy = geometry.type === 'Polygon' ? 'exact' : input.privacy;
   const answers = validateAnswers(schema, input.answers);
   const resolvedPhotos = await resolvePhotoAnswers(
     db,
@@ -122,9 +142,9 @@ export async function createReport(
     input.uploadClaimToken ?? null,
   );
   const derivedPlaceLabel =
-    (await reverseGeocode(input.latitude, input.longitude))?.placeLabel ?? null;
+    (await reverseGeocode(location.latitude, location.longitude))?.placeLabel ?? null;
 
-  const privateWkt = pointWkt(input.longitude, input.latitude);
+  const privateWkt = pointWkt(location.longitude, location.latitude);
   if (geometry.type === 'Polygon') {
     if (!(await incidentsRepo.geofenceAllowsGeometry(db, incident.id, JSON.stringify(geometry))))
       throw AppError.unprocessable(
@@ -151,9 +171,9 @@ export async function createReport(
 
   const editToken = newOpaqueToken();
   const publicPoint =
-    input.privacy === 'approximate'
-      ? approximatePoint(input.latitude, input.longitude)
-      : { latitude: input.latitude, longitude: input.longitude };
+    privacy === 'approximate'
+      ? approximatePoint(location.latitude, location.longitude)
+      : { latitude: location.latitude, longitude: location.longitude };
   const status: ReportStatus = suspicious.length > 0 ? 'flagged' : 'unverified';
   const expiresAt = incident.reportExpiryDays
     ? new Date(Date.now() + incident.reportExpiryDays * 86_400_000)
@@ -165,10 +185,10 @@ export async function createReport(
       schemaSnapshot: schema,
       answers: resolvedPhotos.answers,
       placeLabel: derivedPlaceLabel,
-      privacy: input.privacy,
+      privacy,
       publicPointWkt: pointWkt(publicPoint.longitude, publicPoint.latitude),
       reportGeometryGeoJson: JSON.stringify(geometry),
-      radius: input.privacy === 'approximate' ? PRIVACY_RADIUS_METERS : null,
+      radius: privacy === 'approximate' ? PRIVACY_RADIUS_METERS : null,
       browserTokenHash: browserHash,
       ipHash,
       editTokenHash: await hashEditToken(editToken),
@@ -194,7 +214,12 @@ export async function createReport(
       reportId: id,
       actorType: 'public',
       eventType: 'report_created',
-      metadata: { privacy: input.privacy, status, captchaBypassed: captchaResult.bypassed },
+      metadata: {
+        privacy,
+        geometry: geometry.type,
+        status,
+        captchaBypassed: captchaResult.bypassed,
+      },
     });
     return id;
   });
@@ -202,7 +227,7 @@ export async function createReport(
   log('report_created', {
     incidentId: incident.id,
     reportId,
-    privacy: input.privacy,
+    privacy,
     status,
   });
 
@@ -278,11 +303,6 @@ export async function updateReport(reportId: string, token: string, input: Updat
     throw AppError.conflict('This incident is closed; reports can no longer be updated.');
   await rateLimit.enforce('report_edit', hashContent([reportId]), 20, 3_600);
 
-  if (row.locationPrivacy === 'approximate' && input.privacy === 'exact' && !input.confirmExact)
-    throw AppError.conflict(
-      'Explicit confirmation is required before publishing an exact location',
-    );
-
   const schema = incidentFormSchema.parse(row.formSchema);
   const geometry = reportGeometrySchema.parse(
     input.geometry ??
@@ -292,6 +312,20 @@ export async function updateReport(reportId: string, token: string, input: Updat
     throw AppError.badRequest('This incident accepts point reports only');
   if (row.reportGeometryMode === 'polygon' && geometry.type !== 'Polygon')
     throw AppError.badRequest('This incident accepts polygon reports only');
+  if (
+    row.locationPrivacy === 'approximate' &&
+    input.privacy === 'exact' &&
+    !input.confirmExact &&
+    geometry.type !== 'Polygon'
+  )
+    throw AppError.conflict(
+      'Explicit confirmation is required before publishing an exact location',
+    );
+  const location =
+    geometry.type === 'Polygon'
+      ? polygonAnchor(geometry)
+      : { latitude: input.latitude, longitude: input.longitude };
+  const privacy = geometry.type === 'Polygon' ? 'exact' : input.privacy;
   const answers = validateAnswers(schema, input.answers);
   const resolvedPhotos = await resolvePhotoAnswers(
     db,
@@ -301,9 +335,9 @@ export async function updateReport(reportId: string, token: string, input: Updat
     reportId,
   );
   const derivedPlaceLabel =
-    (await reverseGeocode(input.latitude, input.longitude))?.placeLabel ?? null;
+    (await reverseGeocode(location.latitude, location.longitude))?.placeLabel ?? null;
 
-  const privateWkt = pointWkt(input.longitude, input.latitude);
+  const privateWkt = pointWkt(location.longitude, location.latitude);
   if (geometry.type === 'Polygon') {
     if (!(await incidentsRepo.geofenceAllowsGeometry(db, row.incidentId, JSON.stringify(geometry))))
       throw AppError.unprocessable(
@@ -313,16 +347,21 @@ export async function updateReport(reportId: string, token: string, input: Updat
     throw AppError.unprocessable(OUTSIDE_AREA_MESSAGE);
   }
 
-  const movedMeters = distanceMeters(row.latitude, row.longitude, input.latitude, input.longitude);
+  const movedMeters = distanceMeters(
+    row.latitude,
+    row.longitude,
+    location.latitude,
+    location.longitude,
+  );
   const locationChanged = movedMeters > 1;
 
   let publicPoint: { latitude: number; longitude: number };
   let radius: number | null;
-  if (input.privacy === 'exact') {
-    publicPoint = { latitude: input.latitude, longitude: input.longitude };
+  if (privacy === 'exact') {
+    publicPoint = { latitude: location.latitude, longitude: location.longitude };
     radius = null;
   } else if (locationChanged || row.locationPrivacy === 'exact') {
-    publicPoint = approximatePoint(input.latitude, input.longitude);
+    publicPoint = approximatePoint(location.latitude, location.longitude);
     radius = PRIVACY_RADIUS_METERS;
   } else {
     publicPoint = { latitude: row.publicLatitude, longitude: row.publicLongitude };
@@ -332,7 +371,7 @@ export async function updateReport(reportId: string, token: string, input: Updat
   const suspicious = movedMeters > 50_000 ? ['implausible_move'] : undefined;
   await reportsPrivateRepo.update(db, reportId, {
     answers: resolvedPhotos.answers,
-    privacy: input.privacy,
+    privacy,
     publicPointWkt: pointWkt(publicPoint.longitude, publicPoint.latitude),
     radius,
     privatePointWkt: privateWkt,
@@ -347,9 +386,14 @@ export async function updateReport(reportId: string, token: string, input: Updat
     reportId,
     actorType: 'public',
     eventType: 'report_updated',
-    metadata: { privacy: input.privacy, movedMeters: Math.round(movedMeters) },
+    metadata: { privacy, geometry: geometry.type, movedMeters: Math.round(movedMeters) },
   });
-  log('report_updated', { reportId, privacy: input.privacy, movedMeters: Math.round(movedMeters) });
+  log('report_updated', {
+    reportId,
+    privacy,
+    geometry: geometry.type,
+    movedMeters: Math.round(movedMeters),
+  });
 }
 
 export async function deleteReport(reportId: string, editToken: string, ip: string) {

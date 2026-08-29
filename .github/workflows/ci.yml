@@ -24,6 +24,9 @@ jobs:
           --health-retries=20
     env:
       DATABASE_URL: postgresql://impact:impact-test-password@127.0.0.1:5432/impact_test
+      TEST_DATABASE_URL: postgresql://impact:impact-test-password@127.0.0.1:5432/impact_test
+      E2E_DATABASE_URL: postgresql://impact:impact-test-password@127.0.0.1:5432/impact_test
+      E2E_REQUIRE_ISOLATION: true
       APP_URL: http://localhost:3000
       SESSION_SECRET: test-session-secret-test-session-secret-test
       IP_HASH_SECRET: test-ip-hash-secret-test-ip-hash-secret-test
@@ -45,8 +48,8 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
-      - name: Install Playwright browser
-        run: npx playwright install --with-deps chromium
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium firefox webkit
       - name: Start application
         run: npm run start -- -p 3000 > /tmp/impact-next.log 2>&1 &
       - name: Wait for application

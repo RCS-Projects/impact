@@ -117,6 +117,23 @@ export async function archive(incidentId: string, admin: AdminSession) {
   });
 }
 
+export async function remove(incidentId: string, admin: AdminSession) {
+  const db = getSql();
+  const existing = await incidentsRepo.findByIdForAdmin(db, incidentId);
+  if (!existing) throw AppError.notFound('Incident not found');
+  if (existing.status === 'live')
+    throw AppError.conflict('Close the live incident before deleting it');
+  await auditRepo.record(db, {
+    incidentId,
+    actorType: 'admin',
+    actorId: admin.id,
+    eventType: 'incident_deleted',
+    metadata: { status: existing.status },
+  });
+  const deleted = await incidentsRepo.remove(db, incidentId);
+  if (!deleted) throw AppError.conflict('Incident could not be deleted');
+}
+
 export async function getById(incidentId: string) {
   const db = getSql();
   const row = await incidentsRepo.findByIdForAdmin(db, incidentId);

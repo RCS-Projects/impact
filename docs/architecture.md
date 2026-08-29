@@ -18,7 +18,7 @@ Browser ──► Next.js (pages + /api) ──► PostgreSQL/PostGIS
 ```
 src/
   app/                    # Routes only: thin handlers, no SQL
-    page.tsx              # Landing: live incident list
+    page.tsx              # Informational landing; incident maps use direct URLs
     map/[reference]/      # Public map + report form pages
     report/edit/[id]/[token]/
     admin/                # Dashboard + moderation queue
@@ -76,6 +76,15 @@ never break URLs. Drafts are unresolvable publicly; `live` and `closed` resolve.
    repeated CAPTCHA failures → status `flagged`, otherwise `unverified`
 8. Transaction: insert report (public projection), insert private location, write audit
 9. Response: report id + one-time edit URL; persistent browser cookie set
+
+## Geometry model
+
+An incident may accept point reports, polygon reports, or either. An optional
+`reporting_area` is an administrator-defined submission boundary; it is not a public
+report geometry. Point reports retain the public/private coordinate split. Polygon
+reports store and render the submitted public area as GeoJSON/PostGIS geometry and do
+not receive a point privacy circle. Reporting-boundary rings are canonical closed
+GeoJSON; the map editor keeps an open working ring only while a participant is drawing.
 
 ## Moderation model
 

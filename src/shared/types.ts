@@ -45,6 +45,7 @@ export interface GeocodeResult {
   latitude: number;
   longitude: number;
   placeLabel?: string;
+  boundary?: { type: 'Polygon' | 'MultiPolygon'; coordinates: unknown };
 }
 
 export interface FieldView {

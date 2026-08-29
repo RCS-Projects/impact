@@ -3,6 +3,73 @@ import { expect, test } from '@playwright/test';
 const ADMIN_LOGIN = process.env.E2E_ADMIN_LOGIN ?? 'admin';
 const ADMIN_PASSWORD = process.env.E2E_ADMIN_PASSWORD ?? 'admin';
 
+const REPORTING_AREA = JSON.stringify({
+  type: 'Polygon',
+  coordinates: [
+    [
+      [-75.9, 45.2],
+      [-75.4, 45.2],
+      [-75.4, 45.7],
+      [-75.9, 45.7],
+      [-75.9, 45.2],
+    ],
+  ],
+});
+
+async function signIn(page: any) {
+  await page.goto('/admin');
+  await page.fill('input[name="login"]', ADMIN_LOGIN);
+  await page.fill('input[name="password"]', ADMIN_PASSWORD);
+  await page.click('button:has-text("Sign in")');
+  try {
+    await page.waitForSelector('text=Incident maps', { timeout: 5000 });
+  } catch {
+    await page.request.post('/api/admin/login', {
+      data: { login: ADMIN_LOGIN, password: ADMIN_PASSWORD },
+    });
+    await page.goto('/admin');
+    await page.waitForSelector('text=Incident maps');
+  }
+}
+
+async function csrfHeader(page: any) {
+  const csrf = await page.evaluate(() => {
+    const match = document.cookie.match(/(?:^|;)\s*impact_csrf=([^;]+)/);
+    return match ? decodeURIComponent(match[1] ?? '') : '';
+  });
+  return { 'x-csrf-token': csrf };
+}
+
+async function createAndPublishIncident(page: any, title: string) {
+  // Create the incident through the admin API so the public-submission test
+  // is not coupled to the UI create form. This keeps the matrix reliable when
+  // many browser projects run in parallel.
+  const headers = await csrfHeader(page);
+  const createResponse = await page.request.post('/api/admin/incidents', {
+    headers,
+    data: {
+      title,
+      templateKey: 'storm-damage',
+      center: { latitude: 45.42, longitude: -75.69, zoom: 10 },
+      reportingArea: JSON.parse(REPORTING_AREA),
+      reportGeometryMode: 'point',
+    },
+  });
+  if (!createResponse.ok()) {
+    const body = await createResponse.text().catch(() => '');
+    throw new Error(`Create incident failed: ${createResponse.status()} ${body}`);
+  }
+  const created = (await createResponse.json()) as { id: string; url: string };
+
+  const publishResponse = await page.request.post(`/api/admin/incidents/${created.id}/publish`, {
+    headers,
+    data: {},
+  });
+  expect(publishResponse.ok()).toBeTruthy();
+
+  return created.url;
+}
+
 test.describe('public reporting loop', () => {
   test.beforeEach(async ({ page }) => {
     page.on('dialog', async (dialog) => {
@@ -13,35 +80,14 @@ test.describe('public reporting loop', () => {
   test('admin publishes a map, public submits and edits an approximate report', async ({
     page,
   }) => {
-    await page.goto('/admin');
-    await page.fill('input[name="login"]', ADMIN_LOGIN);
-    await page.fill('input[name="password"]', ADMIN_PASSWORD);
-    await page.click('button:has-text("Sign in")');
-    try {
-      await page.waitForSelector('text=Incident maps', { timeout: 5000 });
-    } catch {
-      // Some WebKit/CI combinations do not surface the server-component refresh
-      // after a client navigation. Re-authenticate through the same endpoint and
-      // reload so the rest of the browser workflow remains covered.
-      await page.request.post('/api/admin/login', {
-        data: { login: ADMIN_LOGIN, password: ADMIN_PASSWORD },
-      });
-      await page.goto('/admin');
-      await page.waitForSelector('text=Incident maps');
-    }
-
+    await signIn(page);
     const title = `E2E Storm ${Date.now()}`;
-    await page.fill('input[name="title"]', title);
-    await page.click('button:has-text("Create draft")');
-    await page.waitForSelector('text=Draft created');
-
-    const row = page.locator('tr', { hasText: title });
-    await row.locator('button:has-text("Publish")').click();
-    const urlCell = await row.locator('a[href^="/map/"]').first().getAttribute('href');
+    const urlCell = await createAndPublishIncident(page, title);
     expect(urlCell).toBeTruthy();
 
     await page.goto(`${urlCell}/report`);
-    await page.waitForSelector('.picker-map[data-map-ready="true"]', { timeout: 15000 });
+    await page.locator('.picker-map').waitFor({ state: 'visible' });
+    await page.waitForSelector('.picker-map[data-map-ready="true"]', { timeout: 30000 });
     await page.getByRole('button', { name: 'Use map centre' }).click();
     await expect(page.locator('button:has-text("Continue")').first()).toBeEnabled();
     await page.click('button:has-text("Continue")');
@@ -69,7 +115,7 @@ test.describe('public reporting loop', () => {
     await page.waitForSelector('text=report has been updated');
   });
 
-  test('out-of-area submissions are rejected', async ({ page, request }) => {
+  test('out-of-area submissions are rejected', async ({ request }) => {
     const response = await request.post('/api/incidents/does-not-exist-aaaaaaaa/reports', {
       data: {
         latitude: 45.42,

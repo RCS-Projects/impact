@@ -100,7 +100,10 @@ export function IncidentMapView(props: IncidentMapViewProps) {
       if (values.size > 0) params.set(`filter[${key}]`, [...values].join(','));
     try {
       const response = await fetch(`/api/incidents/${props.reference}/reports?${params}`);
-      if (!response.ok) return;
+      if (!response.ok) {
+        setLoadError('Reports could not be refreshed. Check your connection and try again.');
+        return;
+      }
       const data = (await response.json()) as {
         reports: PublicReport[];
         total: number;
@@ -368,7 +371,12 @@ export function IncidentMapView(props: IncidentMapViewProps) {
     circleSource.setData({
       type: 'FeatureCollection',
       features: reports
-        .filter((report) => report.privacy === 'approximate' && report.radius)
+        .filter(
+          (report) =>
+            (!report.geometry || report.geometry.type === 'Point') &&
+            report.privacy === 'approximate' &&
+            report.radius,
+        )
         .map((report) => ({
           type: 'Feature',
           properties: {},
@@ -553,10 +561,21 @@ export function IncidentMapView(props: IncidentMapViewProps) {
                       className="button button-secondary button-sm u-map-label"
                       onClick={() => {
                         setSelectedId(report.id);
-                        mapRef.current?.easeTo({
-                          center: [report.longitude, report.latitude],
-                          zoom: Math.max(mapRef.current.getZoom(), 13),
-                        });
+                        if (report.geometry?.type === 'Polygon') {
+                          const ring = (report.geometry.coordinates as [number, number][][])[0];
+                          if (ring?.length) {
+                            const bounds = ring.reduce(
+                              (current, point) => current.extend(point),
+                              new maplibregl.LngLatBounds(ring[0], ring[0]),
+                            );
+                            mapRef.current?.fitBounds(bounds, { padding: 64, maxZoom: 14 });
+                          }
+                        } else {
+                          mapRef.current?.easeTo({
+                            center: [report.longitude, report.latitude],
+                            zoom: Math.max(mapRef.current.getZoom(), 13),
+                          });
+                        }
                       }}
                     >
                       {report.placeLabel ?? 'Reported location'} — {STATUS_LABELS[report.status]}
@@ -581,9 +600,11 @@ export function IncidentMapView(props: IncidentMapViewProps) {
             <h3>{selected.placeLabel ?? 'Crowdsourced report'}</h3>
             <span className={`chip chip-${selected.status}`}>{STATUS_LABELS[selected.status]}</span>
             <p className="hint">
-              {selected.privacy === 'approximate'
-                ? 'Approximate location — the true position is hidden somewhere inside the circle.'
-                : 'Exact location.'}{' '}
+              {selected.geometry?.type === 'Polygon'
+                ? 'Public search area — the boundary is shown as submitted.'
+                : selected.privacy === 'approximate'
+                  ? 'Approximate location — the true position is hidden somewhere inside the circle.'
+                  : 'Exact location.'}{' '}
               Reported {formatRelativeTime(selected.createdAt)}.
             </p>
             <dl>
@@ -620,7 +641,18 @@ export function IncidentMapView(props: IncidentMapViewProps) {
           </aside>
         )}
 
-        {loadError && <div className="map-note notice-error">{loadError}</div>}
+        {loadError && (
+          <div className="map-note notice-error" role="status">
+            {loadError}{' '}
+            <button
+              type="button"
+              className="button button-secondary button-sm"
+              onClick={() => void loadReports()}
+            >
+              Retry
+            </button>
+          </div>
+        )}
         {!loadError && mapReady && reports.length === 0 && (
           <div className="map-note">No reports match the current view or filters.</div>
         )}

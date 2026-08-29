@@ -4,7 +4,9 @@ import { loadDotEnv } from './helpers/env';
 import { resetAndMigrate } from './helpers/db';
 
 loadDotEnv();
-if (process.env.TEST_DATABASE_URL) process.env.DATABASE_URL = process.env.TEST_DATABASE_URL;
+// This suite recreates the schema. It must never fall back to the application database.
+const testDatabaseUrl = process.env.TEST_DATABASE_URL;
+if (testDatabaseUrl) process.env.DATABASE_URL = testDatabaseUrl;
 process.env.APP_URL ??= 'http://localhost:3000';
 process.env.SESSION_SECRET ??= 'test-session-secret-test-session-secret-test';
 process.env.IP_HASH_SECRET ??= 'test-ip-hash-secret-test-ip-hash-secret-test';
@@ -12,7 +14,7 @@ process.env.NOMINATIM_SEARCH_URL ??= 'http://127.0.0.1:9/nominatim/search';
 process.env.IMPACT_RUNTIME_MODE ??= 'development';
 process.env.DEVELOPMENT_TURNSTILE_BYPASS ??= 'true';
 
-const dbUrl = process.env.DATABASE_URL;
+const dbUrl = testDatabaseUrl;
 
 let available = false;
 if (dbUrl) {
@@ -29,7 +31,7 @@ if (dbUrl) {
 
 if (process.env.CI === 'true' && !available) {
   throw new Error(
-    'PostGIS integration database is required in CI; refusing to skip integration tests',
+    'TEST_DATABASE_URL is required for PostGIS integration tests in CI; refusing to skip or touch DATABASE_URL',
   );
 }
 

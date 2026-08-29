@@ -50,9 +50,9 @@ Then sign in at `/admin` (username or full email).
 | `npm run db:seed`         | Seed preset templates                         |
 | `npm run db:reset`        | Drop and re-apply schema (destructive)        |
 
-Integration tests use `TEST_DATABASE_URL` when set (point it at a disposable PostGIS
-instance); otherwise they use `DATABASE_URL`. They are skipped automatically when no
-database is reachable.
+Integration tests recreate their database schema and therefore use **only**
+`TEST_DATABASE_URL`, which must point to a disposable PostGIS instance. They never fall
+back to `DATABASE_URL`; CI fails if the required test database is unavailable.
 
 ## Key documentation
 
@@ -74,5 +74,12 @@ Milestone 3: admin management (roles: admin/moderator), moderation pagination + 
 photo uploads with EXIF stripping, CSV/JSON data exports, SSE real-time updates replacing
 30s polling, display settings (marker size, cluster radius, description toggle),
 archived status, favicon + robots.txt.
+
+The public landing page is informational only. Published incident maps use permanent direct
+URLs. Incidents can accept point reports, public polygon reports, or either; the included
+Search Area template demonstrates the polygon workflow.
+
+Before running browser tests, set `E2E_DATABASE_URL` to a disposable database. The suite
+uses it only for test fixture cleanup and must never be aimed at production data.
 
 Remaining: integrations, advanced analytics, bulk import/export.

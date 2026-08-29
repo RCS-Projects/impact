@@ -15,7 +15,11 @@ services:
     restart: unless-stopped
 
   app:
-    build: .
+    build:
+      context: .
+      args:
+        GIT_COMMIT: ${GIT_COMMIT:-unknown}
+        BUILD_TIME: ${BUILD_TIME:-unknown}
     environment:
       NODE_ENV: ${APP_NODE_ENV:-production}
       IMPACT_RUNTIME_MODE: ${APP_NODE_ENV:-production}
@@ -30,6 +34,7 @@ services:
       TURNSTILE_SITE_KEY: ${TURNSTILE_SITE_KEY:-}
       TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY:-}
       DEVELOPMENT_TURNSTILE_BYPASS: ${DEVELOPMENT_TURNSTILE_BYPASS:-false}
+      UPLOAD_DIR: ${UPLOAD_DIR:-/app/data/uploads}
     depends_on:
       db:
         condition: service_healthy

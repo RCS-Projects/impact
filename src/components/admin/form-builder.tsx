@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { fieldTypes, type FormField, type FieldType } from '@/server/schema/form-schema';
 
 function tempKey() {
@@ -39,6 +39,15 @@ export function FormBuilder({
   lockedKeys?: Set<string>;
 }) {
   const [expanded, setExpanded] = useState<string | null>(null);
+  const identityRef = useRef(new Map<string, string>());
+
+  function identityFor(key: string) {
+    const existing = identityRef.current.get(key);
+    if (existing) return existing;
+    const identity = `field-editor-${crypto.randomUUID()}`;
+    identityRef.current.set(key, identity);
+    return identity;
+  }
 
   function add() {
     const field = newField(value.length);
@@ -77,16 +86,17 @@ export function FormBuilder({
   return (
     <div className="u-stack-sm">
       {value.map((field, idx) => (
-        <div
-          key={field.key}
-          className="card u-form-card"
-          onClick={() => setExpanded(expanded === field.key ? null : field.key)}
-        >
+        <div key={identityFor(field.key)} className="card u-form-card">
           <div className="u-row-gap-sm">
             <span className="hint u-index-label">{idx + 1}.</span>
-            <span className="u-flex-weight">
+            <button
+              type="button"
+              className="u-field-toggle u-flex-weight"
+              aria-expanded={expanded === field.key}
+              onClick={() => setExpanded(expanded === field.key ? null : field.key)}
+            >
               {field.label || <span className="hint">Untitled field</span>}
-            </span>
+            </button>
             <span className="chip u-chip-tiny">{TYPE_LABELS[field.type]}</span>
             {field.required && <span className="chip chip-flagged u-chip-tiny">required</span>}
             <div className="buttons u-buttons-compact">
@@ -133,9 +143,14 @@ export function FormBuilder({
                   <input
                     value={field.key}
                     disabled={lockedKeys.has(field.key)}
-                    onChange={(e) =>
-                      update(field.key, { key: e.target.value.replace(/[^a-z0-9_]/g, '') })
-                    }
+                    onChange={(e) => {
+                      const nextKey = e.target.value.replace(/[^a-z0-9_]/g, '');
+                      const identity = identityFor(field.key);
+                      // Keep the React key stable even while the editable key is temporarily empty.
+                      identityRef.current.set(nextKey, identity);
+                      update(field.key, { key: nextKey });
+                      if (expanded === field.key) setExpanded(nextKey);
+                    }}
                     pattern="^[a-z][a-z0-9_]{0,63}$"
                     maxLength={64}
                   />

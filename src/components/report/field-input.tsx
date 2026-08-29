@@ -118,19 +118,24 @@ export function FieldInput({ field, defaultValue }: { field: FieldView; defaultV
     }
     case 'checkbox':
       return (
-        <label className="field">
-          <span>
+        <fieldset className="field">
+          <legend>
             {field.label}
             {field.required ? ' *' : ''}
-          </span>
+          </legend>
           {hint}
-          <span className="choice-group">
+          <div className="choice-group">
             <label>
-              <input type="checkbox" name={field.key} defaultChecked={defaultValue === true} />
+              <input
+                type="checkbox"
+                name={field.key}
+                required={field.required}
+                defaultChecked={defaultValue === true}
+              />
               Yes
             </label>
-          </span>
-        </label>
+          </div>
+        </fieldset>
       );
     case 'boolean':
       return (

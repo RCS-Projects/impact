@@ -13,6 +13,7 @@ export interface EditInitialData {
   latitude: number;
   longitude: number;
   placeLabel: string | null;
+  geometry?: ReportGeometry | null;
 }
 
 export function ReportForm({
@@ -58,14 +59,20 @@ export function ReportForm({
   const [shareMessage, setShareMessage] = useState('');
   const [step, setStep] = useState(0);
   const [uploadingPhoto, setUploadingPhoto] = useState<string | null>(null);
-  const [geometry, setGeometry] = useState<ReportGeometry | null>(null);
+  const [geometry, setGeometry] = useState<ReportGeometry | null>(initial?.geometry ?? null);
   const [geometryKind, setGeometryKind] = useState<'point' | 'polygon'>(
-    geometryMode === 'polygon' ? 'polygon' : 'point',
+    geometryMode === 'polygon' || initial?.geometry?.type === 'Polygon' ? 'polygon' : 'point',
   );
   const formRef = useRef<HTMLFormElement>(null);
 
   const needsExactConfirmation =
     mode === 'edit' && initial?.privacy === 'approximate' && privacy === 'exact';
+  const stepLabels =
+    geometryKind === 'polygon'
+      ? ['Location', 'Incident details', 'Review and submit']
+      : ['Location', 'Privacy', 'Incident details', 'Review and submit'];
+  const detailsStep = geometryKind === 'polygon' ? 1 : 2;
+  const reviewStep = stepLabels.length - 1;
 
   async function handleSubmit(form: FormData) {
     if (
@@ -248,7 +255,7 @@ export function ReportForm({
       aria-label={mode === 'create' ? 'Submit a report' : 'Update your report'}
     >
       <ol className="report-steps" aria-label="Report steps">
-        {['Location', 'Privacy', 'Incident details', 'Review and submit'].map((label, index) => (
+        {stepLabels.map((label, index) => (
           <li key={label} className={index === step ? 'active' : index < step ? 'complete' : ''}>
             {label}
           </li>
@@ -350,24 +357,24 @@ export function ReportForm({
         </label>
       )}
 
-      <div hidden={step !== 2}>
+      <div hidden={step !== detailsStep}>
         {fields.map((field) => (
           <FieldInput key={field.key} field={field} defaultValue={initial?.answers[field.key]} />
         ))}
       </div>
 
-      {step === 2 && mode === 'create' && (
+      {step === detailsStep && mode === 'create' && (
         <TurnstileWidget siteKey={turnstileSiteKey} onToken={setTurnstileToken} />
       )}
 
-      {step === 1 && geometryKind === 'polygon' && (
+      {step === 0 && geometryKind === 'polygon' && geometry && (
         <p className="notice notice-warn">
           Search areas are public and are not fuzzed. The polygon represents the area you are
           reporting.
         </p>
       )}
 
-      {step === 3 && (
+      {step === reviewStep && (
         <section className="review-card" aria-labelledby="review-heading">
           <h2 id="review-heading">Review your report</h2>
           <p>
@@ -407,7 +414,7 @@ export function ReportForm({
             Back
           </button>
         )}
-        {step < 3 ? (
+        {step < reviewStep ? (
           <button
             type="button"
             className="button"
@@ -416,7 +423,7 @@ export function ReportForm({
               (step === 1 && geometryKind === 'point' && needsExactConfirmation && !confirmExact)
             }
             onClick={() => {
-              if (step === 2) {
+              if (step === detailsStep) {
                 const invalid = formRef.current?.querySelector<HTMLElement>(':invalid');
                 if (invalid) {
                   invalid.focus();

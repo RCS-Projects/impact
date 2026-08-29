@@ -22,6 +22,7 @@
     "prune:expired": "tsx scripts/prune-expired.ts",
     "cleanup": "tsx scripts/cleanup.ts",
     "preflight": "tsx scripts/preflight.ts",
+    "doctor": "tsx scripts/doctor.ts",
     "smoke": "tsx scripts/deployment-smoke.ts",
     "smoke:browser": "tsx scripts/live-browser-smoke.ts",
     "backup:restore:drill": "scripts/backup-restore-drill.sh"
