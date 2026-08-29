@@ -32,6 +32,27 @@ export function formatCoordinates(latitude: number, longitude: number): string {
 
 type Ring = [number, number][];
 
+export function geoJsonAreaCenter(geojson: unknown, fallback: [number, number]): [number, number] {
+  if (!geojson || typeof geojson !== 'object') return fallback;
+  const geometry = geojson as { type?: string; coordinates?: unknown };
+  const rings: Ring[] = [];
+  if (geometry.type === 'Polygon' && Array.isArray(geometry.coordinates)) {
+    const outer = geometry.coordinates[0];
+    if (Array.isArray(outer)) rings.push(outer as Ring);
+  } else if (geometry.type === 'MultiPolygon' && Array.isArray(geometry.coordinates)) {
+    for (const polygon of geometry.coordinates) {
+      if (Array.isArray(polygon) && Array.isArray(polygon[0])) rings.push(polygon[0] as Ring);
+    }
+  }
+  const points = rings.flatMap((ring) => ring.slice(0, -1));
+  if (!points.length) return fallback;
+  const [longitude, latitude] = points.reduce(
+    ([lng, lat], [pointLng, pointLat]) => [lng + pointLng, lat + pointLat],
+    [0, 0],
+  );
+  return [longitude / points.length, latitude / points.length];
+}
+
 function pointInRing(lng: number, lat: number, ring: Ring): boolean {
   let inside = false;
   for (let i = 0, j = ring.length - 1; i < ring.length; j = i, i += 1) {

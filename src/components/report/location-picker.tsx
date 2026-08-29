@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import type { GeocodeResult, PickerPoint } from '@/shared/types';
-import { formatCoordinates, pointInGeoJsonArea } from '@/lib/geo';
+import { formatCoordinates, geoJsonAreaCenter, pointInGeoJsonArea } from '@/lib/geo';
 
 export function LocationPicker({
   center,
@@ -31,13 +31,34 @@ export function LocationPicker({
       container: container.current,
       style:
         process.env.NEXT_PUBLIC_MAP_STYLE_URL ?? 'https://tiles.openfreemap.org/styles/liberty',
-      center,
+      center: geoJsonAreaCenter(reportingArea, center),
       zoom: 11,
     });
     map.addControl(new maplibregl.NavigationControl(), 'top-left');
 
     map.on('load', () => {
       setMapReady(true);
+      if (!value) {
+        const areaCenter = geoJsonAreaCenter(reportingArea, center);
+        map.flyTo({ center: areaCenter, zoom: 11, essential: true });
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              const point = {
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+                placeLabel: 'Device location',
+              };
+              map.flyTo({ center: [point.longitude, point.latitude], zoom: 14, essential: true });
+              setMarker(map, point);
+            },
+            () => {
+              map.flyTo({ center: areaCenter, zoom: 11, essential: true });
+            },
+            { enableHighAccuracy: false, maximumAge: 300_000, timeout: 8_000 },
+          );
+        }
+      }
       if (reportingArea) {
         map.addSource('reporting-area', {
           type: 'geojson',
