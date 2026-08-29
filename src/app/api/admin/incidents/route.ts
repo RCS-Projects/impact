@@ -18,7 +18,7 @@ const createInput = z.object({
     longitude: z.number().min(-142).max(-52),
     zoom: z.number().min(3).max(18),
   }),
-  reportingArea: reportingAreaSchema.optional(),
+  reportingArea: reportingAreaSchema.nullable().optional(),
   reportExpiryDays: z.number().int().min(1).max(365).nullish(),
   reportGeometryMode: reportGeometryModeSchema.default('point'),
 });

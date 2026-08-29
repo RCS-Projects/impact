@@ -20,7 +20,7 @@ const updateInput = z.object({
     })
     .optional(),
   zoom: z.number().min(3).max(18).optional(),
-  reportingArea: reportingAreaSchema.optional(),
+  reportingArea: reportingAreaSchema.nullable().optional(),
   displaySettings: displaySettingsInputSchema.optional(),
   reportExpiryDays: z.number().int().min(1).max(365).nullish(),
   reportGeometryMode: reportGeometryModeSchema.optional(),
