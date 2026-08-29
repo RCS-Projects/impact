@@ -51,7 +51,20 @@ export default defineConfig({
     },
     {
       name: 'firefox-desktop',
-      use: { browserName: 'firefox', viewport: { width: 1920, height: 1080 } },
+      use: {
+        browserName: 'firefox',
+        viewport: { width: 1920, height: 1080 },
+        // GitHub's headless Firefox runner may disable hardware WebGL. MapLibre
+        // needs a context even for its software-rendered test surface.
+        launchOptions: {
+          firefoxUserPrefs: {
+            'webgl.disabled': false,
+            'webgl.force-enabled': true,
+            'layers.acceleration.force-enabled': true,
+            'gfx.webrender.all': true,
+          },
+        },
+      },
     },
     {
       name: 'webkit-phone',
